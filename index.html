@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Github Game Off 2012</title>
+
+    <style>
+      html {
+        height: 100%;
+      }
+
+      body {
+        font-size: 0;
+        height: 100%;
+        width: 100%;
+        margin: 0;
+        padding: 0;
+        background-color: #222222;
+      }
+
+      canvas {
+      width: 500px;
+      height: 500px;
+      }
+
+      .debug {
+        position: absolute;
+        top: 0;
+        left: 0;
+        padding: .5em;
+        background-color: #333333;
+        color: #d0d0d0;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="canvas"></canvas>
+
+    <script type="text/javascript" src="LLJS/src/memcheck.js"></script>
+    <script type="text/javascript" src="LLJS/src/memory.js"></script>
+    <script type="text/javascript" src="input.js"></script>
+    <script type="text/javascript" src="resources.js"></script>
+    <script>
+      function require(name) {
+        return window[name];
+      }
+    </script>
+    <script type="text/javascript" src="stats.min.js"></script>
+    <script src="main.js"></script>
+  </body>
+</html>
