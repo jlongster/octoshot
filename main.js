@@ -11,8 +11,8 @@
   var IMG_BOSSES = 0;
   function heartbeat() {
     stats.begin();
-    ctx.fillStyle = 'red';
-    ctx.fillRect(0, 0, 500, 500);
+    ctx.fillStyle = 'white';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     stats.end();
     requestAnimFrame(heartbeat);
   }
