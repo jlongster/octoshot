@@ -5,7 +5,7 @@ var spawn = require('child_process').spawn;
 var files = ['main.ljs'];
 
 files.forEach(function(name) {
-    fs.watchFile('main.ljs', function() {
+    fs.watchFile('main.ljs', { interval: 1000 }, function() {
         console.log('compiling...');
 
         spawn('growlnotify', ['LLJS', '-m ' + name + ' has finished compiling']);

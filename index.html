@@ -19,10 +19,14 @@
       }
 
       canvas {
-        width: 800px;
-        height: 600px;
+        width: 100%;
+        height: 100%;
         display: block;
         margin: 0 auto;
+
+        image-rendering: optimizeSpeed;
+        image-rendering: -moz-crisp-edges;
+        image-rendering: -webkit-optimize-contrast;
       }
 
       .debug {
@@ -36,11 +40,38 @@
       }
     </style>
   </head>
+
+  <script id="fragment-shader" type="x-shader/x-fragment">
+    precision highp float;
+    varying vec3 v;
+
+    float rand(vec2 n) {
+      return 0.5 + 0.5 * 
+         fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
+    }
+
+    void main() {
+      gl_FragColor = vec4(floor(v.x)/100.0, floor(v.z)/100.0, 0, 1);  // green
+    }
+  </script>
+
+  <script id="vertex-shader" type="x-shader/x-vertex">
+    attribute vec3 a_position;
+    uniform mat4 pers;
+    uniform mat4 transform;
+    varying vec3 v;
+
+    void main() {
+      gl_Position = pers * transform * vec4(a_position, 1);
+      v = a_position;
+    }
+  </script>
   <body>
     <canvas id="canvas"></canvas>
 
     <script type="text/javascript" src="LLJS/src/memcheck.js"></script>
     <script type="text/javascript" src="LLJS/src/memory.js"></script>
+    <script type="text/javascript" src="gl-matrix-min.js"></script>
     <script type="text/javascript" src="input.js"></script>
     <script type="text/javascript" src="resources.js"></script>
     <script>
