@@ -5,44 +5,13 @@ Requirements:
 * Immersive landscape
 * Simple mechanic
 
-* Starts outside in the rain & heavy fog, need to find glowing butterflies
-* These butterflies give you messages guiding you to the next goal
-* The land has been cursed with rain forever, and it's your job to reverse the curse
+* What is the goal?
+** Get the most points (primary)
+*** By collecting items
+*** By killing other people
+** Stay alive (secondary)
+** 
 
-* Write a weather system that runs by a few basic rules
-* The user must figure these rules out and "program" a correct dimension where the
-  weather shines
-* You can backtrack out of a dimension if you make a mistake, but its costly and hard
-  (only do it every now and then, or just make it take a lot of time?)
-
-Variations of bad weather:
-* All rain (what you begin with)
-* Rain & Lightning (kills)
-* Rain upside-down
-* Rain sideways
-* Lightning sideways (kills)
-* Hail
-* Bad soil (producing flooding, possibly an ocean?)
-* Heavy fog
-* Patchy rain/fog/any of the above
-
-* How does the player "code" the weather, how to make it fun?
-* Make a grid and he/she can place objects to change it, like a puzzle?
-** That might get boring, basically just a 2d puzzle
-
-Idea #2: DIMENSIONAL IDENTITY CRISIS
-* An event occurred that messed up spacetime, and the current dimension is
-  freaking out
-* The weather indicates how "correct" the dimension is
-* The dimension is randomly forked itself into multiple ones with minor
-  differences to try to fix itself
-* You must restore the dimension to its original state and to calm it down!
-
-But how?
-
-* Probably should do this in 2d.. not sure where I'll get 3d models from
-* Collect pieces and put them back in the right place
-* Enemies around the board?
 
 Types of 3d games:
 

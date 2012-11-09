@@ -14,198 +14,145 @@ var resources = new Resources();
 var stats;
 var w = window.innerWidth;
 var h = window.innerHeight;
-var sizeX = 100;
-var sizeY = 100;
-var vertexShader, fragmentShader, program;
-var camera;
+var renderer;
+var gl;
 
 var canvas = document.getElementById('canvas');
 canvas.width = w;
 canvas.height = h;
 
-var gl;
+var DEFAULT_ATTRIB_ARRAYS = [
+  { name: "a_position",
+    size: 3,
+    stride: 8,
+    offset: 0,
+    decodeOffset: -4095,
+    decodeScale: 1/8191
+  },
+  { name: "a_texcoord",
+    size: 2,
+    stride: 8,
+    offset: 3,
+    decodeOffset: 0,
+    decodeScale: 1/1023
+  },
+  { name: "a_normal",
+    size: 3,
+    stride: 8,
+    offset: 5,
+    decodeOffset: -511,
+    decodeScale: 1/1023
+  }
+];
 
-var IMG_BOSSES = 0;
+function convertToWireframe(indices) {
+    var arr = new Uint16Array(indices.length / 3 * 6);
+    var idx = 0;
 
-function Camera(pos) {
+    for(var i=0; i<indices.length; i+=3) {
+        arr[idx++] = indices[i];
+        arr[idx++] = indices[i+1];
+        arr[idx++] = indices[i+1];
+        arr[idx++] = indices[i+2];
+        arr[idx++] = indices[i+2];
+        arr[idx++] = indices[i];
+    }
+
+    return arr;
+}
+
+function Mesh(url, pos) {
     this.pos = pos;
-    this.pitch = 0.;
-    this.yaw = 0.;
-    this.transformLoc = gl.getUniformLocation(program, "transform");
-}
-
-Camera.prototype._init = function() {
     this.transform = mat4.create();
-    mat4.identity(this.transform);
-};
+    this.url = url;
+    this.attribDesc = DEFAULT_ATTRIB_ARRAYS;
 
-Camera.prototype._rotate = function() {
-    mat4.rotate(this.transform, Math.PI, [0, 1, 0]);
-};
+    // resources.load(url, this.attribDesc);
 
-Camera.prototype._translate = function() {
-    mat4.translate(this.transform, [-this.pos[0], -this.pos[1], -this.pos[2]]);
-};
-
-Camera.prototype._apply = function() {
-    gl.uniformMatrix4fv(this.transformLoc, false, this.transform);
-};
-
-Camera.prototype.update = function(dt) {
-    this._init();
-
-    var mouse = getMouseMoved();
-    this.pitch += mouse[0] * dt;
-    this.yaw += mouse[1] * dt;
-    
-    this._rotate();
-    mat4.rotate(this.transform, -this.yaw, [1, 0, 0]);
-    mat4.rotate(this.transform, this.pitch, [0, 1, 0]);
-
-    var forward = vec3.create();
-    var side = vec3.create();
-    mat4.multiplyVec3(this.transform, [0, 0, -1], forward);
-    mat4.multiplyVec3(this.transform, [1, 0, 0], side);
-    forward[0] = -forward[0];
-    side[2] = -side[2];
-    
-    if(isDown('UP')) {
-        var res = vec3.create();
-        vec3.add(this.pos, forward, res);
-        this.pos = res;
-    }
-
-    if(isDown('DOWN')) {
-        var res = vec3.create();
-        vec3.subtract(this.pos, forward, res);
-        this.pos = res;
-    }
-
-    if(isDown('LEFT')) {
-        var res = vec3.create();
-        vec3.subtract(this.pos, side, res);
-        this.pos = res;
-    }
-
-    if(isDown('RIGHT')) {
-        var res = vec3.create();
-        vec3.add(this.pos, side, res);
-        this.pos = res;
-    }
-
-    this._translate();
-    this._apply();
+    var mat = mat4.create();
+    mat4.identity(mat);
+    mat4.translate(mat, pos, this.transform);
+    mat4.scale(this.transform, [60, 60, 60], this.transform);
 }
 
-function createShader(id) {
-    var el = document.getElementById(id);
-    if(!el) {
-        return null;
+Mesh.prototype.create = function(program) {
+    var mesh = resources.get(this.url);
+
+    this.attribBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.attribBuffer);
+    gl.bufferData(gl.ARRAY_BUFFER, mesh[0], gl.STATIC_DRAW);
+
+    this.indexBuffer = gl.createBuffer();
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+    var indices = convertToWireframe(mesh[1]);
+    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+
+    this.numIndices = indices.length;
+    this.program = program;
+
+    this.attribs = {};
+    var numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
+    for(var i=0; i<numAttribs; i++) {
+        var attrib = gl.getActiveAttrib(program, i);
+        this.attribs[attrib.name] = gl.getAttribLocation(program,
+                                                         attrib.name);
     }
 
-    var src = el.text;
-    var type;
-
-    if(el.type == 'x-shader/x-vertex') {
-        type = gl.VERTEX_SHADER;
-    }
-    else if(el.type == 'x-shader/x-fragment') {
-        type = gl.FRAGMENT_SHADER;
-    }
-    else {
-        throw new Error('unknown shader type: ' + id);
+    this.uniforms = {};
+    var numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
+    for(var i=0; i<numUniforms; i++) {
+        var uniform = gl.getActiveUniform(program, i);
+        this.uniforms[uniform.name] = gl.getUniformLocation(program,
+                                                            uniform.name);
     }
 
-    var shader = gl.createShader(type);
-    gl.shaderSource(shader, src);
-    gl.compileShader(shader);
+};
 
-    var status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
-    if(!status) {
-        var err = gl.getShaderInfoLog(shader);
-        gl.deleteShader(shader);
-        throw new Error('shader compilation error (' + id + '): ' + err);
+Mesh.prototype.render = function() {
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.attribBuffer);
+    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+    for(var i=0; i<this.attribDesc.length; i++) {
+        var desc = this.attribDesc[i];
+        var loc = this.attribs[desc.name];
+
+        if(loc !== undefined) {
+            gl.enableVertexAttribArray(loc);
+
+            // Assume float
+            gl.vertexAttribPointer(loc, desc.size, gl.FLOAT,
+                                   !!desc.normalized, 4*desc.stride,
+                                   4*desc.offset);
+        }
     }
 
-    return shader;
-}
+    gl.drawElements(gl.LINES, this.numIndices, gl.UNSIGNED_SHORT, 0);
+};
 
 function init() {
     gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    // Vertices
-
-    var vertexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, vertexBuffer);
-
-    var vertices = new Float32Array(sizeX*sizeY*3);
-
-    for(var y=0; y<sizeY; y++) {
-        for(var x=0; x<sizeX; x++) {
-            var i = (y*sizeX + x) * 3;
-            vertices[i] = x;
-            vertices[i+1] = Math.random() * 2.0;
-            vertices[i+2] = y;
-        }
-    }
-
-    gl.bufferData(gl.ARRAY_BUFFER, vertices, gl.STATIC_DRAW);
-
-    // Indices
-
-    var indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
-
-    var indices = new Uint16Array((sizeX - 1) * (sizeY - 1) * 6);
-    
-    for(var y=0; y<sizeY - 1; y++) {
-        for(var x=0; x<sizeX - 1; x++) {
-            var idx = (y * sizeX + x);
-            var i = (y * (sizeX-1) + x) * 6;
-
-            indices[i] = idx;
-            indices[i+1] = idx + 1;
-            indices[i+2] = idx + sizeX;
-
-            indices[i+3] = idx + sizeX;
-            indices[i+4] = idx + 1;
-            indices[i+5] = idx + sizeX + 1;
-        }
-    }
-
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-
-    // Shaders and stuff
-
-    vertexShader = createShader('vertex-shader');
-    fragmentShader = createShader('fragment-shader');
-
-    program = gl.createProgram();
-    gl.attachShader(program, vertexShader);
-    gl.attachShader(program, fragmentShader);
-    gl.linkProgram(program);
-
-    var status = gl.getProgramParameter(program, gl.LINK_STATUS);
-    if(!status) {
-        var err = gl.getProgramInfoLog(program);
-        gl.deleteProgram(program);
-        throw new Error('program linking error: ' + err);
-    }
-
-    gl.useProgram(program);
-
-    var positionLocation = gl.getAttribLocation(program, "a_position");
-    gl.enableVertexAttribArray(positionLocation);
-    gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-
     var pers = mat4.create();
     mat4.perspective(45, w / h, 0.1, 1000.0, pers);
 
-    var persLoc = gl.getUniformLocation(program, "pers");
-    gl.uniformMatrix4fv(persLoc, false, pers);
+    renderer = new Renderer(new Camera([20, 10, 20]));
+    renderer.init();
+    var terrain = new Terrain(0, 0, 256*3, 256*3);
+    terrain.create();
+    renderer.addObject(terrain);
 
-    camera = new Camera([0, 10, 0]);
+    var mesh = new Mesh('resources/ben.mesh', [50, 20, 50]);
+    mesh.create(getProgram('default'));
+    renderer.addObject(mesh);
 
+    iterPrograms(function(program) {
+        gl.useProgram(program);
+        var persLoc = gl.getUniformLocation(program, "pers");
+        gl.uniformMatrix4fv(persLoc, false, pers);
+    });
+
+    gl.enable(gl.DEPTH_TEST);
     heartbeat();
 }
 
@@ -215,12 +162,12 @@ function heartbeat() {
     var now = Date.now();
     var dt = (now - last) / 1000.;
 
-    camera.update(dt);
+    renderer.update(dt);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    gl.drawElements(gl.TRIANGLES, (sizeX-1)*(sizeY-1)*6, gl.UNSIGNED_SHORT, 0);
+    renderer.render();
 
     stats.end();
     last = now;
@@ -235,6 +182,7 @@ window.addEventListener('load', function() {
     stats.domElement.style.top = '0px';
     document.body.appendChild(stats.domElement);
 
-    //resources.load(IMG_BOSSES, "resources/bosses.png");
+    resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
+    resources.load('resources/grass.jpg');
     resources.onReady(init);
 });

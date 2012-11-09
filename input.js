@@ -1,6 +1,7 @@
 
 var pressedKeys = {};
 var specialKeys = {
+    32: 'SPACE',
     37: 'LEFT',
     38: 'UP',
     39: 'RIGHT',
@@ -57,6 +58,9 @@ function isDown(key) {
     return pressedKeys[key.toUpperCase()];
 }
 
+function isMouseDown() {
+    return down;
+}
 
 function getMouseMoved() {
     if(curMouse && !accessed) {
