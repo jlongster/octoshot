@@ -1,70 +1,96 @@
 
-function Camera(pos) {
-    this.pos = pos;
-    this.pitch = 0.;
-    this.yaw = 0.;
-}
+quat4.rotateX = function (quat, angle, dest) {
+    if (!dest) { dest = quat; }
 
-Camera.prototype.update = function(dt) {
-    this.transform = mat4.create();
-    mat4.identity(this.transform);
+    angle *= 0.5; 
 
-    var mouse = getMouseMoved();
-    this.pitch += mouse[0] * .5 * dt;
-    this.yaw += mouse[1] * .5 * dt;
+    var qax = quat[0], qay = quat[1], qaz = quat[2], qaw = quat[3],
+        qbx = Math.sin(angle), qbw = Math.cos(angle);
 
-    if((isDown('LEFT') || isDown('a')) && !isMouseDown()) {
-        this.pitch -= 1 * dt;
-    }
-
-    if((isDown('RIGHT') || isDown('d')) && !isMouseDown()) {
-        this.pitch += 1 * dt;
-    }
-
-    mat4.rotate(this.transform, Math.PI, [0, 1, 0]);
-    mat4.rotate(this.transform, -this.yaw, [1, 0, 0]);
-    mat4.rotate(this.transform, this.pitch, [0, 1, 0]);
-
-    var forward = vec3.create();
-    var side = vec3.create();
-    mat4.multiplyVec3(this.transform, [0, 0, -1], forward);
-    mat4.multiplyVec3(this.transform, [1, 0, 0], side);
-    vec3.scale(forward, 100*dt, forward);
-    vec3.scale(side, 100*dt, side);
-    forward[0] = -forward[0];
-    side[2] = -side[2];
-
-    if((isDown('LEFT') || isDown('a')) && isMouseDown()) {
-        var res = vec3.create();
-        vec3.subtract(this.pos, side, res);
-        this.pos = res;
-    }
-
-    if((isDown('RIGHT') || isDown('d')) && isMouseDown()) {
-        var res = vec3.create();
-        vec3.add(this.pos, side, res);
-        this.pos = res;
-    }
-
-    if(isDown('UP') || isDown('w')) {
-        var res = vec3.create();
-        vec3.add(this.pos, forward, res);
-        this.pos = res;
-    }
-
-    if(isDown('DOWN') || isDown('s')) {
-        var res = vec3.create();
-        vec3.subtract(this.pos, forward, res);
-        this.pos = res;
-    }
-
-    if(isDown('SPACE')) {
-        renderer.addObject(new Ball());
-    }
-
-    var x = this.pos[0];
-    var y = this.pos[1];
-    var z = this.pos[2];
-    this.pos[1] = Terrain.getHeight(x, z, true) + 20.0;
-    mat4.translate(this.transform, [-this.pos[0], -this.pos[1], -this.pos[2]]);
+    dest[0] = qax * qbw + qaw * qbx;
+    dest[1] = qay * qbw + qaz * qbx;
+    dest[2] = qaz * qbw - qay * qbx;
+    dest[3] = qaw * qbw - qax * qbx;
 };
+
+quat4.rotateY = function (quat, angle, dest) {
+    if (!dest) { dest = quat; }
+
+    angle *= 0.5;
+
+    quat4.multiply(quat,
+                   [0, Math.sin(angle), 0, Math.cos(angle)],
+                   dest);
+};
+
+var Camera = SceneNode.extend({
+    init: function(pos) {
+        this.parent(pos);
+        // Default position should be looking at a positive Z axis
+        this.yaw = Math.PI;
+        this.pitch = 0.;
+    },
+
+    update: function(dt) {
+        this.transform = mat4.create();
+
+        var mouse = getMouseMoved();
+        this.yaw -= mouse[0] * .25 * dt;
+        this.pitch -= mouse[1] * .25 * dt;
+
+        if((isDown('LEFT') || isDown('a')) && !isMouseDown()) {
+            this.yaw += 1 * dt;
+        }
+
+        if((isDown('RIGHT') || isDown('d')) && !isMouseDown()) {
+            this.yaw -= 1 * dt;
+        }
+
+        // TODO: optimize this
+        var globalQuat = quat4.fromAngleAxis(-this.pitch, [1, 0, 0]);
+        quat4.rotateY(globalQuat, -this.yaw);
+        quat4.toMat4(globalQuat, this.transform);
+
+        this.rot = quat4.fromAngleAxis(this.pitch, [1, 0, 0]);
+        quat4.rotateY(this.rot, this.yaw);
+
+        var forward = vec3.create([0, 0, -1]);
+        var left = vec3.create([-1, 0, 0]);
+        quat4.multiplyVec3(this.rot, forward);
+        quat4.multiplyVec3(this.rot, left);
+
+        vec3.scale(forward, 180*dt, forward);
+        vec3.scale(left, 100*dt, left);
+
+        if((isDown('LEFT') || isDown('a')) && isMouseDown()) {
+            vec3.add(this.pos, left);
+        }
+
+        if((isDown('RIGHT') || isDown('d')) && isMouseDown()) {
+            vec3.subtract(this.pos, left);
+        }
+
+        if(isDown('UP') || isDown('w')) {
+            vec3.add(this.pos, forward);
+        }
+
+        if(isDown('DOWN') || isDown('s')) {
+            vec3.subtract(this.pos, forward);
+        }
+
+        var x = this.pos[0];
+        var y = this.pos[1];
+        var z = this.pos[2];
+        this.pos[1] = Terrain.getHeight(x, z, true) + 20.0;
+        mat4.translate(this.transform, [-this.pos[0], -this.pos[1], -this.pos[2]]);
+
+        this._dirty = true;
+        this.globalTransform = this.transform;
+    },
+
+    prerender: function() {
+    },
+    
+    render: function() {
+    }
+});

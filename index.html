@@ -64,7 +64,7 @@
     uniform sampler2D sampler;
 
     void main() {
-      float density = 0.002;
+      float density = 0.001;
       float z = gl_FragCoord.z / gl_FragCoord.w;
       float LOG2 = 1.442695;
       float fogFactor = exp2(-density*density*z*z*LOG2);
@@ -81,6 +81,7 @@
     uniform mat4 transform;
     varying vec3 v;
     varying vec2 texcoord;
+    varying vec3 normal;
 
     float rand(vec2 n) {
       return 0.5 + 0.5 * 
@@ -96,10 +97,13 @@
   <body>
     <canvas id="canvas"></canvas>
 
-    <script type="text/javascript" src="gl-matrix-min.js"></script>
-    <script type="text/javascript" src="simplex-noise.min.js"></script>
+    <script type="text/javascript" src="gl-matrix.js"></script>
+    <script type="text/javascript" src="simplex-noise.js"></script>
+    <script type="text/javascript" src="object.js"></script>
     <script type="text/javascript" src="input.js"></script>
     <script type="text/javascript" src="resources.js"></script>
+    <script type="text/javascript" src="scene.js"></script>
+    <script type="text/javascript" src="mesh.js"></script>
     <script type="text/javascript" src="terrain.js"></script>
     <script type="text/javascript" src="camera.js"></script>
     <script type="text/javascript" src="shaders.js"></script>

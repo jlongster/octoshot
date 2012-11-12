@@ -39,7 +39,7 @@ var DEFAULT_ATTRIB_ARRAYS = [
   { name: "a_normal",
     size: 3,
     stride: 8,
-    offset: 5,
+    offset: 3,
     decodeOffset: -511,
     decodeScale: 1/1023
   }
@@ -61,90 +61,170 @@ function convertToWireframe(indices) {
     return arr;
 }
 
-function Mesh(url, pos) {
-    this.pos = pos;
-    this.transform = mat4.create();
-    this.url = url;
-    this.attribDesc = DEFAULT_ATTRIB_ARRAYS;
+var Cube = SceneNode.extend({
+    init: function(pos, rot, scale, wireframe) {
+        this.parent(pos, rot, scale);
+        this.wireframe = wireframe;
+    },
 
-    // resources.load(url, this.attribDesc);
+    create: function(program) {
+        this.program = program;
 
-    var mat = mat4.create();
-    mat4.identity(mat);
-    mat4.translate(mat, pos, this.transform);
-    mat4.scale(this.transform, [60, 60, 60], this.transform);
-}
+        this.vertexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
-Mesh.prototype.create = function(program) {
-    var mesh = resources.get(this.url);
+        var vertices = [
+            // front
+            0, 0, 0,
+            1, 0, 0,
+            1, 1, 0,
+            0, 1, 0,
 
-    this.attribBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.attribBuffer);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh[0], gl.STATIC_DRAW);
+            // left
+            1, 0, 0,
+            1, 0, 1,
+            1, 1, 1,
+            1, 1, 0,
 
-    this.indexBuffer = gl.createBuffer();
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+            // right
+            0, 0, 1,
+            0, 0, 0,
+            0, 1, 0,
+            0, 1, 1,
 
-    var indices = convertToWireframe(mesh[1]);
-    gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+            // back
+            1, 0, 1,
+            0, 0, 1,
+            0, 1, 1,
+            1, 1, 1,
 
-    this.numIndices = indices.length;
-    this.program = program;
+            // top
+            0, 1, 0,
+            1, 1, 0,
+            1, 1, 1,
+            0, 1, 1,
 
-    this.attribs = {};
-    var numAttribs = gl.getProgramParameter(program, gl.ACTIVE_ATTRIBUTES);
-    for(var i=0; i<numAttribs; i++) {
-        var attrib = gl.getActiveAttrib(program, i);
-        this.attribs[attrib.name] = gl.getAttribLocation(program,
-                                                         attrib.name);
-    }
+            // bottom
+            0, 0, 1,
+            1, 0, 1,
+            1, 0, 0,
+            0, 0, 0
+        ];
 
-    this.uniforms = {};
-    var numUniforms = gl.getProgramParameter(program, gl.ACTIVE_UNIFORMS);
-    for(var i=0; i<numUniforms; i++) {
-        var uniform = gl.getActiveUniform(program, i);
-        this.uniforms[uniform.name] = gl.getUniformLocation(program,
-                                                            uniform.name);
-    }
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
 
-};
+        // Indices
 
-Mesh.prototype.render = function() {
-    gl.bindBuffer(gl.ARRAY_BUFFER, this.attribBuffer);
-    gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+        this.indexBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
-    for(var i=0; i<this.attribDesc.length; i++) {
-        var desc = this.attribDesc[i];
-        var loc = this.attribs[desc.name];
+        if(!this.wireframe) {
+            // 6 sides, 2 triangles each, 3 vertices each tri
+            var indices = new Uint16Array(6*2*3);
+            var idx = 0;
 
-        if(loc !== undefined) {
-            gl.enableVertexAttribArray(loc);
+            for(var i=0; i<vertices.length; i+=4) {
+                indices[idx++] = i;
+                indices[idx++] = i+1;
+                indices[idx++] = i+2;
 
-            // Assume float
-            gl.vertexAttribPointer(loc, desc.size, gl.FLOAT,
-                                   !!desc.normalized, 4*desc.stride,
-                                   4*desc.offset);
+                indices[idx++] = i;
+                indices[idx++] = i+2;
+                indices[idx++] = i+3;
+            }
+
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        }
+        else {
+            // Wireframe
+            var indices = new Uint16Array(6*8);
+            var idx = 0;
+
+            for(var i=0; i<vertices.length; i+=4) {
+                indices[idx++] = i;
+                indices[idx++] = i+1;
+
+                indices[idx++] = i+1;
+                indices[idx++] = i+2;
+
+                indices[idx++] = i+2;
+                indices[idx++] = i+3;
+
+                indices[idx++] = i+3;
+                indices[idx++] = i;
+            }
+
+            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
+        }
+    },
+
+    render: function() {
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+        var positionLocation = gl.getAttribLocation(this.program, "a_position");
+        if(positionLocation != -1) {
+            gl.enableVertexAttribArray(positionLocation);
+            gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
+        }
+
+        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
+
+        if(this.wireframe) {
+            gl.drawElements(gl.LINES, 6*8, gl.UNSIGNED_SHORT, 0);
+        }
+        else {
+            gl.drawElements(gl.TRIANGLES, 6*2*3, gl.UNSIGNED_SHORT, 0);
         }
     }
+});
 
-    gl.drawElements(gl.LINES, this.numIndices, gl.UNSIGNED_SHORT, 0);
-};
+var Player = SceneNode.extend({});
+
+var Circular = SceneNode.extend({
+    init: function(pos, rot, scale) {
+        this.parent(pos, rot || [0., [0., 0., 1.]], scale);
+    },
+
+    update: function(dt) {
+        quat4.rotateY(this.rot, Math.PI / 8. * dt);
+    }
+});
 
 function init() {
     gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    var pers = mat4.create();
-    mat4.perspective(45, w / h, 0.1, 1000.0, pers);
-
-    renderer = new Renderer(new Camera([20, 10, 20]));
+    renderer = new Renderer();
     renderer.init();
-    var terrain = new Terrain(0, 0, 256*3, 256*3);
-    terrain.create();
-    renderer.addObject(terrain);
 
-    var mesh = new Mesh('resources/ben.mesh', [50, 20, 50]);
-    mesh.create(getProgram('default'));
-    renderer.addObject(mesh);
+    var camera = new Camera([60, 10, 60]);
+    renderer.setRoot(camera);
+
+    var sceneX = 256*5;
+    var sceneY = 256*5;
+
+    var terrain = new Terrain(null, null, null, sceneX, sceneY);
+    terrain.create();
+    camera.addObject(terrain);
+
+    var player = new Player();
+    camera.addObject(player);
+
+    var cube = new Cube([sceneX/2, 200, sceneY/2],
+                        null,
+                        [100, 100, 100]);
+    cube.create(getProgram('terrain'));
+    camera.addObject(cube);
+
+    var circ = new Circular();
+    cube.addObject(circ);
+
+    for(var i=0; i<10; i++) {
+        var c = new Cube([i*1.1+1.1, 0, 0], null, [.5, .5, .5]);
+        c.create(getProgram('terrain'));
+        circ.addObject(c);
+    }
+
+    var pers = mat4.create();
+    mat4.perspective(45, w / h, 1.0, 5000.0, pers);
 
     iterPrograms(function(program) {
         gl.useProgram(program);
@@ -153,6 +233,7 @@ function init() {
     });
 
     gl.enable(gl.DEPTH_TEST);
+    //gl.enable(gl.CULL_FACE);
     heartbeat();
 }
 
@@ -183,6 +264,7 @@ window.addEventListener('load', function() {
     document.body.appendChild(stats.domElement);
 
     resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
+    resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
     resources.load('resources/grass.jpg');
     resources.onReady(init);
 });
