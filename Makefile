@@ -6,6 +6,7 @@ built: *.js
 	mkdir built
 	cat gl-matrix-min.js \
 		simplex-noise.js \
+		object.js \
 		input.js \
 		resources.js \
 		scene.js \

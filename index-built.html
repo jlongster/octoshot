@@ -64,7 +64,7 @@
     uniform sampler2D sampler;
 
     void main() {
-      float density = 0.002;
+      float density = 0.001;
       float z = gl_FragCoord.z / gl_FragCoord.w;
       float LOG2 = 1.442695;
       float fogFactor = exp2(-density*density*z*z*LOG2);
@@ -81,6 +81,7 @@
     uniform mat4 transform;
     varying vec3 v;
     varying vec2 texcoord;
+    varying vec3 normal;
 
     float rand(vec2 n) {
       return 0.5 + 0.5 * 
