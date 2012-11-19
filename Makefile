@@ -4,20 +4,22 @@ all: built
 built: *.js
 	rm -rf built
 	mkdir built
-	cat gl-matrix-min.js \
-		simplex-noise.js \
-		object.js \
+	cat shade/gl-matrix.js \
+		shade/util.js \
+		shade/object.js \
+		shade/resources.js \
+		shade/scene.js \
+		shade/mesh.js \
+		shade/camera.js \
+		shade/cube.js \
+		shade/shaders.js \
+		shade/renderer.js \
+		shade/mesh-loader.js \
 		input.js \
-		resources.js \
-		scene.js \
-		mesh.js \
+		simplex-noise.js \
 		terrain.js \
-		camera.js \
-		shaders.js \
-		renderer.js \
-		mesh-loader.js \
 		stats.min.js \
-		main.js > built/bundled.js
+		sample2.js > built/bundled2.js
 	cp index-built.html built/index.html
 	cp -r resources built
 	java -jar compiler.jar --js built/bundled.js > built/bundled-out.js

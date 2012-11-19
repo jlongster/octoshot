@@ -1,270 +1,107 @@
+var express = require('express');
+var settings = require('./settings');
+var BinaryServer = require('binaryjs').BinaryServer;
+var binstruct = require('binstruct');
+var fs = require('fs');
 
-var requestAnimFrame = (function(){
-    return window.requestAnimationFrame       ||
-        window.webkitRequestAnimationFrame ||
-        window.mozRequestAnimationFrame    ||
-        window.oRequestAnimationFrame      ||
-        window.msRequestAnimationFrame     ||
-        function(callback){
-            window.setTimeout(callback, 1000 / 60);
-        };
-})();
+var app = express();
+var server = require('http').createServer(app);
 
-var resources = new Resources();
-var stats;
-var w = window.innerWidth;
-var h = window.innerHeight;
-var renderer;
-var gl;
+app.configure(function() {
+    app.use(express.static(__dirname + '/static'));
+});
 
-var canvas = document.getElementById('canvas');
-canvas.width = w;
-canvas.height = h;
+// Sockets
 
-var DEFAULT_ATTRIB_ARRAYS = [
-  { name: "a_position",
-    size: 3,
-    stride: 8,
-    offset: 0,
-    decodeOffset: -4095,
-    decodeScale: 1/8191
-  },
-  { name: "a_texcoord",
-    size: 2,
-    stride: 8,
-    offset: 3,
-    decodeOffset: 0,
-    decodeScale: 1/1023
-  },
-  { name: "a_normal",
-    size: 3,
-    stride: 8,
-    offset: 3,
-    decodeOffset: -511,
-    decodeScale: 1/1023
-  }
+var clients = [];
+
+// Quick little format definition so I can share this between
+// client/server
+var basePacket = [
+    ['type', 'int32'],
+    ['from', 'int32']
 ];
 
-function convertToWireframe(indices) {
-    var arr = new Uint16Array(indices.length / 3 * 6);
-    var idx = 0;
+var movePacket = basePacket.concat([
+    ['x', 'float'],
+    ['y', 'float']
+]);
 
-    for(var i=0; i<indices.length; i+=3) {
-        arr[idx++] = indices[i];
-        arr[idx++] = indices[i+1];
-        arr[idx++] = indices[i+1];
-        arr[idx++] = indices[i+2];
-        arr[idx++] = indices[i+2];
-        arr[idx++] = indices[i];
+var PACKET_TYPES = [];
+
+function createPacketDef(desc) {
+    var def = binstruct.def();
+
+    for(var i=0, l=desc.length; i<l; i++) {
+        var field = desc[i];
+
+        switch(field[1]) {
+        case 'float':
+            def = def.floatle(field[0]);
+            break;
+        case 'int32':
+            def = def.int32le(field[0]);
+        }
     }
 
-    return arr;
+    PACKET_TYPES.push(def);
+    def.typeId = PACKET_TYPES.length - 1;
+
+    return def;
 }
 
-var Cube = SceneNode.extend({
-    init: function(pos, rot, scale, wireframe) {
-        this.parent(pos, rot, scale);
-        this.wireframe = wireframe;
-    },
+basePacket = createPacketDef(basePacket);
+movePacket = createPacketDef(movePacket);
 
-    create: function(program) {
-        this.program = program;
+function broadcast(msg) {
+    for(var i=0, l=clients.length; i<l; i++) {
+        clients[i].send(msg);
+    }
+}
 
-        this.vertexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
+var bserver = new BinaryServer({ server: server });
 
-        var vertices = [
-            // front
-            0, 0, 0,
-            1, 0, 0,
-            1, 1, 0,
-            0, 1, 0,
+bserver.on('connection', function(client) {
+    clients.push(client);
+    console.log('client connected [' + clients.length + ']');
 
-            // left
-            1, 0, 0,
-            1, 0, 1,
-            1, 1, 1,
-            1, 1, 0,
+    client.on('stream', function(stream) {
+        var parts = [];
 
-            // right
-            0, 0, 1,
-            0, 0, 0,
-            0, 1, 0,
-            0, 1, 1,
+        stream.on('data', function(data) {
+            parts.push(data);
+        });
 
-            // back
-            1, 0, 1,
-            0, 0, 1,
-            0, 1, 1,
-            1, 1, 1,
+        stream.on('error', function(err) {
+            console.log(err);
+        });
 
-            // top
-            0, 1, 0,
-            1, 1, 0,
-            1, 1, 1,
-            0, 1, 1,
-
-            // bottom
-            0, 0, 1,
-            1, 0, 1,
-            1, 0, 0,
-            0, 0, 0
-        ];
-
-        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
-
-        // Indices
-
-        this.indexBuffer = gl.createBuffer();
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-
-        if(!this.wireframe) {
-            // 6 sides, 2 triangles each, 3 vertices each tri
-            var indices = new Uint16Array(6*2*3);
-            var idx = 0;
-
-            for(var i=0; i<vertices.length; i+=4) {
-                indices[idx++] = i;
-                indices[idx++] = i+1;
-                indices[idx++] = i+2;
-
-                indices[idx++] = i;
-                indices[idx++] = i+2;
-                indices[idx++] = i+3;
+        stream.on('end', function() {
+            if(parts.length > 1) {
+                throw new Error("multiple chunks incoming, we don't " +
+                                "support that yet");
             }
 
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-        }
-        else {
-            // Wireframe
-            var indices = new Uint16Array(6*8);
-            var idx = 0;
-
-            for(var i=0; i<vertices.length; i+=4) {
-                indices[idx++] = i;
-                indices[idx++] = i+1;
-
-                indices[idx++] = i+1;
-                indices[idx++] = i+2;
-
-                indices[idx++] = i+2;
-                indices[idx++] = i+3;
-
-                indices[idx++] = i+3;
-                indices[idx++] = i;
+            var packet = basePacket.wrap(parts[0]);
+            switch(PACKET_TYPES[packet.type]) {
+            case movePacket:
+                packet = movePacket.wrap(parts[0]);
+                console.log(packet.x, packet.y);
+                break;
+            default:
+                console.log('unknown packet type: ' + packet.type);
             }
-
-            gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, indices, gl.STATIC_DRAW);
-        }
-    },
-
-    render: function() {
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        var positionLocation = gl.getAttribLocation(this.program, "a_position");
-        if(positionLocation != -1) {
-            gl.enableVertexAttribArray(positionLocation);
-            gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
-        }
-
-        gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-
-        if(this.wireframe) {
-            gl.drawElements(gl.LINES, 6*8, gl.UNSIGNED_SHORT, 0);
-        }
-        else {
-            gl.drawElements(gl.TRIANGLES, 6*2*3, gl.UNSIGNED_SHORT, 0);
-        }
-    }
-});
-
-var Player = SceneNode.extend({});
-
-var Circular = SceneNode.extend({
-    init: function(pos, rot, scale) {
-        this.parent(pos, rot || [0., [0., 0., 1.]], scale);
-    },
-
-    update: function(dt) {
-        quat4.rotateY(this.rot, Math.PI / 8. * dt);
-    }
-});
-
-function init() {
-    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-    renderer = new Renderer();
-    renderer.init();
-
-    var camera = new Camera([60, 10, 60]);
-    renderer.setRoot(camera);
-
-    var sceneX = 256*5;
-    var sceneY = 256*5;
-
-    var terrain = new Terrain(null, null, null, sceneX, sceneY);
-    terrain.create();
-    camera.addObject(terrain);
-
-    var player = new Player();
-    camera.addObject(player);
-
-    var cube = new Cube([sceneX/2, 200, sceneY/2],
-                        null,
-                        [100, 100, 100]);
-    cube.create(getProgram('terrain'));
-    camera.addObject(cube);
-
-    var circ = new Circular();
-    cube.addObject(circ);
-
-    for(var i=0; i<10; i++) {
-        var c = new Cube([i*1.1+1.1, 0, 0], null, [.5, .5, .5]);
-        c.create(getProgram('terrain'));
-        circ.addObject(c);
-    }
-
-    var pers = mat4.create();
-    mat4.perspective(45, w / h, 1.0, 5000.0, pers);
-
-    iterPrograms(function(program) {
-        gl.useProgram(program);
-        var persLoc = gl.getUniformLocation(program, "pers");
-        gl.uniformMatrix4fv(persLoc, false, pers);
+        });
     });
 
-    gl.enable(gl.DEPTH_TEST);
-    //gl.enable(gl.CULL_FACE);
-    heartbeat();
-}
-
-var last = Date.now();
-function heartbeat() {
-    stats.begin();
-    var now = Date.now();
-    var dt = (now - last) / 1000.;
-
-    renderer.update(dt);
-
-    gl.clearColor(0.0, 0.0, 0.0, 1.0);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-    renderer.render();
-
-    stats.end();
-    last = now;
-    requestAnimFrame(heartbeat);
-}
-
-window.addEventListener('load', function() {
-    stats = new Stats();
-    stats.setMode(1);
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.right = '0px';
-    stats.domElement.style.top = '0px';
-    document.body.appendChild(stats.domElement);
-
-    resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
-    resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
-    resources.load('resources/grass.jpg');
-    resources.onReady(init);
+    client.on('close', function() {
+        // Remove itself from the clients array
+        clients.splice(clients.indexOf(client));
+        console.log('client disconnected [' + clients.length + ']');
+    });
 });
+
+// Fire up the server
+
+console.log('Started server on ' + settings.port + '...');
+server.listen(settings.port);

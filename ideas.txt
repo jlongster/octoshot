@@ -10,7 +10,6 @@ Requirements:
 *** By collecting items
 *** By killing other people
 ** Stay alive (secondary)
-** 
 
 
 Types of 3d games:
