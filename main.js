@@ -18,7 +18,12 @@ var CLIENTS = [];
 function broadcast(user, packet) {
     for(var i=0, l=CLIENTS.length; i<l; i++) {
         if(CLIENTS[i] != user) {
-            CLIENTS[i].stream.write(packet);
+            try {
+                CLIENTS[i].stream.write(packet);
+            }
+            catch(e) {
+                console.log('send error: ' + e);
+            }
         }
     }
 }

@@ -73,8 +73,8 @@ function init() {
     camera = new sh.Camera([0, 0, 0]);
     renderer.setRoot(camera);
 
-    var sceneX = 256;
-    var sceneY = 256;
+    var sceneX = 256 * 4;
+    var sceneY = 256 * 4;
 
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
@@ -124,9 +124,10 @@ function initServer() {
     });
 
     server.on('move', function(obj) {
+        console.log('move: ' + obj);
         var node = renderer.getObject('player' + obj.from);
         if(node) {
-            node.setPos(obj.x, Terrain.getHeight(obj.x, obj.y), obj.y);
+            node.setPos(obj.x, Terrain.getHeight(obj.x, obj.y) + 20, obj.y);
         }
     });
 }
