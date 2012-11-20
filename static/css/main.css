@@ -1,0 +1,112 @@
+html {
+    height: 100%;
+}
+
+body {
+    font-size: 0;
+    height: 100%;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+    background-color: #222222;
+}
+
+div {
+    font-size: 14px;
+    font-family: Tahoma, sans-serif;
+}
+
+h1 {
+    font-size: 30px;
+    color: white;
+    text-align: center;
+    margin-top: 1em;
+}
+
+canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    margin: 0 auto;
+
+    image-rendering: optimizeSpeed;
+    image-rendering: -moz-crisp-edges;
+    image-rendering: -webkit-optimize-contrast;
+}
+
+.debug {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: .5em;
+    background-color: #333333;
+    color: #d0d0d0;
+    font-size: 16px;
+}
+
+#chat {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    width: 40%;
+    background-color: black;
+    border: 1px solid grey;
+    opacity: .7;
+    font-size: 14px;
+    color: white;
+}
+
+#messages {
+    overflow: auto;
+    height: 200px;
+}
+
+#messages span.name {
+    color: #ccffcc;
+    margin-right: .25em;
+    font-style: italic;
+}
+
+.type {
+    width: 100%;
+    margin: 0;
+    border-top: 1px solid grey;
+    background-color: black;
+}
+
+.type .inner {
+    padding: .5em;
+    text-align: center;
+}
+
+.type input {
+    margin: 0;
+    padding: .5em;
+    font-size: 14px;
+    font-family: Tahoma, sans-serif;
+    width: 98%;
+    background-color: black;
+    color: white;
+    border: 1px solid black;
+}
+
+#notification {
+    position: absolute;
+    top: 0;
+    left: 25%;
+    width: 50%;
+    text-align: center;
+    color: white;
+    padding: 1em;
+    font-size: 20px;
+    opacity: 0;
+
+    -webkit-transition: opacity 10s;
+    -moz-transition: opacity 10s;
+}
+
+#notification.open {
+    -webkit-transition: opacity 1s;
+    -moz-transition: opacity 1s;
+    opacity: 1;
+}

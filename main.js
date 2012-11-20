@@ -29,7 +29,14 @@ function broadcast(user, packet) {
 }
 
 function handlePacket(user, data) {
-    var packet = p.parsePacket(data, p.basePacket);
+    var packet, desc;
+
+    if(data instanceof Buffer) {
+        packet = p.parsePacket(data, p.basePacket);
+    }
+    else {
+        packet = p.objectifyPacket(data);
+    }
 
     switch(p.getPacketDesc(packet.type)) {
     case p.movePacket:
@@ -40,6 +47,32 @@ function handlePacket(user, data) {
                     x: packet.x,
                     y: packet.y};
         broadcast(user, p.makePacket(obj, p.movePacket));
+        break;
+    case p.messagePacket:
+        packet = p.messagePacket({
+            type: p.messagePacket.typeId,
+            from: user.id,
+            name: user.name,
+            message: packet.message
+        });
+
+        broadcast(user, packet);
+        user.stream.write(packet);
+        break;
+    case p.nameChangePacket:
+        var newName = packet.name;
+
+        packet = p.messagePacket({
+            type: p.messagePacket.typeId,
+            from: 0,
+            name: 'server',
+            message: ('*' + user.name + ' has changed his/her name to ' +
+                      newName + '*')
+        });
+
+        user.name = newName;
+        broadcast(user, packet);
+        user.stream.write(packet);
         break;
     default:
         console.log('unknown packet type: ' + packet.type);
@@ -63,6 +96,7 @@ bserver.on('connection', function(client) {
         CLIENTS.push(user);
         user.stream = stream;
         user.id = CLIENTS.length;
+        user.name = 'anon' + user.id;
 
         console.log('client connected [' + user.id + ']');
 
@@ -75,10 +109,26 @@ bserver.on('connection', function(client) {
         });
 
         // Tell the user his/her id
-        var obj = { type: p.newUserPacket.typeId,
-                    from: 0,
-                    id: user.id };
-        stream.write(p.makePacket(obj, p.newUserPacket));
+        stream.write(p.newUserPacket({
+            type: p.newUserPacket.typeId,
+            from: 0,
+            id: user.id,
+            name: user.name
+        }));
+
+        stream.write(p.messagePacket({
+            type: p.messagePacket.typeId,
+            from: 0,
+            name: 'server',
+            message: 'Welcome!'
+        }));
+
+        stream.write(p.messagePacket({
+            type: p.messagePacket.typeId,
+            from: 0,
+            name: 'server',
+            message: 'Type /nick <name> to change your name'
+        }));
 
         CLIENTS.forEach(function(otherUser) {
             if(user != otherUser) {
@@ -92,8 +142,8 @@ bserver.on('connection', function(client) {
         // Broadcast to everyone about the new player
         var join = { type: p.joinPacket.typeId,
                      from: 0,
-                     id: obj.id };
-        broadcast(user, p.makePacket(join, p.joinPacket));        
+                     id: user.id };
+        broadcast(user, p.makePacket(join, p.joinPacket));
     });
 
     client.on('close', function() {

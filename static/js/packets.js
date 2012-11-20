@@ -8,12 +8,8 @@
         ['from', 'int32']
     ]);
 
-    var newUserPacket = packetType(basePacket, [
-        ['id', 'int32']
-    ]);
-
     var joinPacket = packetType(basePacket, [
-        ['id', 'int32'],
+        ['id', 'int32']
     ]);
 
     var leavePacket = packetType(basePacket, [
@@ -24,6 +20,40 @@
         ['x', 'float'],
         ['y', 'float']
     ]);
+
+    var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
+    var messagePacket = jsPacketType(basePacket, ['name', 'message']);
+    var nameChangePacket = jsPacketType(basePacket, ['name']);
+
+    function jsPacketType(inherit, fields) {
+        if(!fields) {
+            fields = inherit;
+            inherit = null;
+        }
+
+        var inheritFields = inherit.fields.map(function(field) { return field[0]; });
+        fields = inheritFields.concat(fields);
+
+        function make(obj) {
+            var res = [];
+
+            fields.forEach(function(field) {
+                if(obj[field] === undefined) {
+                    throw new Error('missing field: ' + field);
+                }
+
+                res.push(obj[field]);
+            });
+
+            return res;
+        };
+
+        PACKET_TYPES.push(make);
+        make.typeId = PACKET_TYPES.length - 1;
+        make.fields = fields;
+
+        return make;
+    }
 
     // Quick little format definition so I can share this between
     // client/server
@@ -147,6 +177,19 @@
         return buffer;
     };
 
+    function objectifyPacket(packet) {
+        var desc = getPacketDesc(packet[0]);
+        var obj = {};
+        var i = 0;
+
+        desc.fields.forEach(function(field) {
+            obj[field] = packet[i];
+            i++;
+        });
+
+        return obj;
+    }
+
     function getPacketDesc(type) {
         return PACKET_TYPES[type];
     }
@@ -157,9 +200,12 @@
         joinPacket: joinPacket,
         leavePacket: leavePacket,
         movePacket: movePacket,
+        messagePacket: messagePacket,
+        nameChangePacket: nameChangePacket,
 
         parsePacket: parsePacket,
         makePacket: makePacket,
+        objectifyPacket: objectifyPacket,
         getPacketDesc: getPacketDesc
     };
 

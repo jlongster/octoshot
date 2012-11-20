@@ -73,8 +73,8 @@ function init() {
     camera = new sh.Camera([0, 0, 0]);
     renderer.setRoot(camera);
 
-    var sceneX = 256 * 4;
-    var sceneY = 256 * 4;
+    var sceneX = 256;
+    var sceneY = 256;
 
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
@@ -95,6 +95,7 @@ function init() {
     document.getElementById('loading').style.display = 'none';
 
     initServer();
+    initMessages();
 
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
@@ -103,6 +104,16 @@ function init() {
 
 function initServer() {
     server = new Server();
+
+    server.on('newUser', function(obj) {
+        var el = $('#notification');
+        el.text('Your username: ' + obj.name)
+            .addClass('open');
+
+        setTimeout(function() {
+            el.removeClass('open');
+        }, 1000);
+    });
 
     server.on('join', function(obj) {
         console.log('joined: ' + obj.id);
@@ -154,7 +165,7 @@ function heartbeat() {
     stats.update();
 }
 
-window.addEventListener('load', function() {
+$(function() {
     stats = new Stats();
     //stats.setMode(1);
     stats.domElement.style.position = 'absolute';

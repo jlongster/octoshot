@@ -4,47 +4,8 @@
     <meta charset="utf-8" />
     <title>Github Game Off 2012</title>
 
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
     <style>
-      html {
-        height: 100%;
-      }
-
-      body {
-        font-size: 0;
-        height: 100%;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #222222;
-      }
-
-      h1 {
-        font-size: 30px;
-        color: white;
-        text-align: center;
-        margin-top: 1em;
-      }
-
-      canvas {
-        width: 100%;
-        height: 100%;
-        display: block;
-        margin: 0 auto;
-
-        image-rendering: optimizeSpeed;
-        image-rendering: -moz-crisp-edges;
-        image-rendering: -webkit-optimize-contrast;
-      }
-
-      .debug {
-        position: absolute;
-        top: 0;
-        left: 0;
-        padding: .5em;
-        background-color: #333333;
-        color: #d0d0d0;
-        font-size: 16px;
-      }
     </style>
   </head>
 
@@ -128,6 +89,17 @@
     <h1 id="loading">Loading...</h1>
     <canvas id="canvas"></canvas>
 
+    <div id="notification"></div>
+
+    <div id="chat">
+      <div id="messages"></div>
+      <div class="type">
+        <div class="inner">
+          <input id="message-input" type="text" name="message" />
+        </div>
+      </div>
+    </div>
+
     <script>
       window.sh = {};
       window.sh.util = {};
@@ -144,9 +116,11 @@
     <script src="js/shade/renderer.js"></script>
     <script src="js/shade/mesh-loader.js"></script>
 
+    <script src="js/zepto.min.js"></script>
     <script src="js/lib/binary.js"></script>
     <script src="js/packets.js"></script>
     <script src="js/conn.js"></script>
+    <script src="js/messages.js"></script>
 
     <script src="js/input.js"></script>
     <script src="js/simplex-noise.js"></script>
