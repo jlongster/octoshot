@@ -13,7 +13,11 @@
     ]);
 
     var joinPacket = packetType(basePacket, [
-        ['id', 'int32']
+        ['id', 'int32'],
+    ]);
+
+    var leavePacket = packetType(basePacket, [
+        ['id', 'int32']        
     ]);
 
     var movePacket = packetType(basePacket, [
@@ -80,7 +84,7 @@
                 break;
             case 'int32':
                 if(USE_ARRAY_BUFFER) {
-                    obj[field[0]] = $I[pos];
+                    obj[field[0]] = $I[pos / 4];
                 }
                 else {
                     obj[field[0]] = buffer.readInt32LE(pos);
@@ -151,7 +155,9 @@
         basePacket: basePacket,
         newUserPacket: newUserPacket,
         joinPacket: joinPacket,
+        leavePacket: leavePacket,
         movePacket: movePacket,
+
         parsePacket: parsePacket,
         makePacket: makePacket,
         getPacketDesc: getPacketDesc

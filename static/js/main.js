@@ -17,7 +17,7 @@ var h = window.innerHeight;
 var renderer;
 var gl;
 var camera;
-var server = new Server();
+var server;
 
 var canvas = document.getElementById('canvas');
 canvas.width = w;
@@ -83,34 +83,6 @@ function init() {
     var player = new Player();
     camera.addObject(player);
 
-    for(var x=0; x<sceneX; x+=sceneX/10) {
-        for(var y=0; y<sceneY; y+=sceneY/10) {
-            var cube = new sh.Cube([x, 100, y],
-                                null,
-                                [20, 20, 20],
-                                { centered: true,
-                                  });
-            cube.setMaterial(sh.Shaders.getProgram('default'));
-            camera.addObject(cube);
-
-            var circ = cube.addObject(new sh.SceneNode({
-                rot: [Math.random() * Math.PI, 0, 0],
-                update: function(dt) {
-                    this.rotateY(Math.PI / 2.0 * dt);
-                }
-            }));
-
-            for(var i=0; i<Math.PI*2; i+=Math.PI/2) {
-                var c = new sh.Cube([Math.sin(i), 0, Math.cos(i)],
-                                    null,
-                                    [.5, .5, .5],
-                                    { centered: true });
-                c.setMaterial(sh.Shaders.getProgram('default'));
-                circ.addObject(c);
-            }
-        }
-    }
-
     var pers = mat4.create();
     mat4.perspective(45, w / h, 1.0, 5000.0, pers);
 
@@ -122,20 +94,47 @@ function init() {
 
     document.getElementById('loading').style.display = 'none';
 
+    initServer();
+
     gl.enable(gl.DEPTH_TEST);
     gl.enable(gl.CULL_FACE);
     heartbeat();
+}
+
+function initServer() {
+    server = new Server();
+
+    server.on('join', function(obj) {
+        console.log('joined: ' + obj.id);
+
+        var cube = new sh.Cube([0, 50, 0],
+                               null,
+                               [10, 10, 10],
+                               { centered: true });
+        cube.id = 'player' + obj.id;
+        cube.setMaterial(sh.Shaders.getProgram('default'));
+        camera.addObject(cube);
+    });
+
+    server.on('leave', function(obj) {
+        var node = renderer.getObject('player' + obj.id);
+        if(node) {
+            node._parent.removeObject(node);
+        }
+    });
+
+    server.on('move', function(obj) {
+        var node = renderer.getObject('player' + obj.from);
+        if(node) {
+            node.setPos(obj.x, Terrain.getHeight(obj.x, obj.y), obj.y);
+        }
+    });
 }
 
 var last = Date.now();
 function heartbeat() {
     var now = Date.now();
     var dt = (now - last) / 1000.;
-
-	var time = Date.now() * 0.001;
-	var rx = Math.sin( time * 0.7 ) * 0.2;
-	var ry = Math.sin( time * 0.3 ) * 0.1;
-	var rz = Math.sin( time * 0.2 ) * 0.1;
 
     renderer.update(dt);
 
