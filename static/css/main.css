@@ -51,14 +51,14 @@ canvas {
     width: 50%;
     background-color: black;
     border: 1px solid grey;
-    opacity: .7;
+    opacity: .9;
     font-size: 14px;
     color: white;
 }
 
 #messages {
     overflow: auto;
-    height: 300px;
+    height: 500px;
 }
 
 #messages span.name {
@@ -68,12 +68,25 @@ canvas {
 }
 
 #messages .server {
-    color: #ff6666;
+    color: #afd3d4;
 }
 
 #messages .me {
     font-style: italic;
     color: #9999dd;
+}
+
+#messages > div {
+    font-family: Monaco, monospace;
+    font-size: 12px;
+}
+
+#messages img {
+    max-height: 200px;
+}
+
+#messages a {
+    color: #28b8dc;
 }
 
 .type {
@@ -109,6 +122,7 @@ canvas {
     padding: 1em;
     font-size: 20px;
     opacity: 0;
+    z-index: 3;
 
     -webkit-transition: opacity 10s;
     -moz-transition: opacity 10s;

@@ -74,7 +74,7 @@
     varying vec3 normal;
 
     float rand(vec2 n) {
-      return 0.5 + 0.5 * 
+      return 0.5 + 0.5 *
          fract(sin(dot(n.xy, vec2(12.9898, 78.233)))* 43758.5453);
     }
 
@@ -95,7 +95,7 @@
       <div id="messages"></div>
       <div class="type">
         <div class="inner">
-          <input id="message-input" type="text" name="message" />
+          <input id="message-input" type="text" name="message" autocomplete="off" />
         </div>
       </div>
     </div>

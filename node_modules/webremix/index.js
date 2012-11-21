@@ -11,18 +11,30 @@ exports.generate = function(content, options, callback) {
     options = {};
   }
 
-  for (var i = 0; i < contentArr.length; i ++) {
-    remix.process(contentArr[i], options, function(err, resp) {
-      if (err) {
-        callback(err);
+  contentArr.forEach(function(content, idx) {
+    process.nextTick(function() {
+      remix.process(content, options, function(err, resp) {
+        if (err) {
+          callback(err);
 
-      } else {
-        finalContent.push(resp);
-      }
+        } else {
+          finalContent.push({ id: idx, message: resp });
+        }
 
-      if (finalContent.length === contentArr.length) {
-        callback(null, finalContent.join(' '));
-      }
+        if (finalContent.length === contentArr.length) {
+          var messageArr = [];
+
+          finalContent = finalContent.sort(function(a, b) {
+            return parseInt(a.id, 10) - parseInt(b.id, 10);
+          });
+
+          finalContent.forEach(function(m) {
+            messageArr.push(m.message);
+          });
+
+          callback(null, messageArr.join(' '));
+        }
+      });
     });
-  }
+  });
 };

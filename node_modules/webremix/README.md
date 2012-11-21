@@ -18,7 +18,11 @@ Converts your media urls and links to embedded HTML.
 
 Output becomes:
 
-    <img src="http://amazinggifs.com/cats.gif"> look at these amazing cats!
+    <div class="image-wrapper">
+        <a href="http://amazinggifs.com/cats.gif" target="_blank">
+            <img src="http://amazinggifs.com/cats.gif">
+        </a>
+    </div> look at these amazing cats!
 
 ## Video size options
 
