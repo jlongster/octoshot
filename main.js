@@ -50,13 +50,7 @@ function handlePacket(user, data) {
         broadcast(user, p.makePacket(obj, p.movePacket));
         break;
     case p.messagePacket:
-        var message = packet.message.replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/ /g, '&nbsp;')
-            .replace(/\n/g, '<br />');
+        var message = packet.message;
 
         remix.generate(message, function(err, res) {
             packet = p.messagePacket({
@@ -140,7 +134,7 @@ function newUserid() {
             return id;
         }
     }
-    
+
     console.log('ran out of user ids!');
     return null;
 }
