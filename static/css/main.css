@@ -78,7 +78,7 @@ canvas {
 
 #messages > div {
     font-family: Monaco, monospace;
-    font-size: 12px;
+    font-size: 13px;
 }
 
 #messages img {
@@ -104,8 +104,8 @@ canvas {
 .type input {
     margin: 0;
     padding: .5em;
-    font-size: 14px;
-    font-family: Tahoma, sans-serif;
+    font-family: Monaco, monospace;
+    font-size: 13px;
     width: 98%;
     background-color: black;
     color: white;
