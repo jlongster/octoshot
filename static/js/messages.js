@@ -8,17 +8,46 @@ function initMessages() {
             return false;
         }
 
-        var parts = input.value.slice(1).split(' ');
-        cmd = parts[0];
-        var args = parts.slice(1);
+        // Scrub scrub scrub
+        var val = input.value;
+        val = val.replace(/\s+/g, ' ');
+        val = val.replace(/(^\s*|\s*$)/g, '');
 
-        switch(cmd) {
-        case 'nick':
-            server.sendNameChange(args[0]);
-            return true;
+        var parts = val.slice(1).split(' ');
+        cmd = parts[0];
+        var args = parts.slice(1).join(' ');
+
+        server.command(cmd, args);
+        return true;
+    }
+
+    function printMessage(msg, name, format) {
+        if(messages.children().length > 100) {
+            messages.children().first().remove();
         }
 
-        return false;
+        format = format || function(msg, name) {
+            return '<div class="' + name + '">' +
+                '<span class="name">&lt;' + name + '&gt;</span> ' +
+                msg + '</div>';
+        };
+
+        msg = msg.replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/ /g, '&nbsp;')
+            .replace(/\n/g, '<br />');
+
+        name = name.replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+
+        messages.append(format(msg, name));
+        messages[0].scrollTop = 100000;
     }
 
     input.onkeydown = function(e) {
@@ -35,18 +64,19 @@ function initMessages() {
     };
 
     server.on('message', function(obj) {
-        if(messages.children().length > 100) {
-            messages.children().first().remove();
+        printMessage(obj.message, obj.name);
+    });
+
+    server.on('cmdRes', function(obj) {
+        switch(obj.method) {
+        case 'users':
+        case 'names':
+            printMessage('Users: '  + obj.res.join(' '), 'server');
+            break;
+        case 'me':
+            printMessage(obj.res, '', function(msg, name) {
+                return '<div class="me">' + msg + '</div>';
+            });
         }
-
-        var str = obj.message.replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;');
-
-        messages.append('<div><span class="name">&lt;' + obj.name + '&gt;</span> '
-                        + str + '</div>');
-        messages[0].scrollTop = 100000;
     });
 }

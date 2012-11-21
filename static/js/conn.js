@@ -34,11 +34,9 @@ var Server = sh.Obj.extend({
             this.fire('move', obj);
             break;
         case packets.joinPacket:
-            obj = packets.parsePacket(packet, packets.joinPacket);
             this.fire('join', obj);
             break;
         case packets.leavePacket:
-            obj = packets.parsePacket(packet, packets.leavePacket);
             this.fire('leave', obj);
             break;
         case packets.newUserPacket:
@@ -49,16 +47,24 @@ var Server = sh.Obj.extend({
         case packets.messagePacket:
             this.fire('message', obj);
             break;
+        case packets.cmdResPacket:
+            this.fire('cmdRes', obj);
         }
     },
 
     on: function(type, func) {
-        this.events[type] = func;
+        if(this.events[type] === undefined) {
+            this.events[type] = [];
+        }
+
+        this.events[type].push(func);
     },
 
     fire: function(type, obj) {
         if(this.events[type]) {
-            this.events[type](obj);
+            this.events[type].forEach(function(func) {
+                func(obj);
+            });
         }
     },
 
@@ -84,5 +90,16 @@ var Server = sh.Obj.extend({
             from: this.userId,
             name: name
         }));
+    },
+
+    command: function(method, args) {
+        args = args || null;
+
+        this.stream.write(packets.cmdPacket({
+            type: packets.cmdPacket.typeId,
+            from: this.userId,
+            method: method,
+            args: args
+        }));        
     }
 });

@@ -73,8 +73,8 @@ function init() {
     camera = new sh.Camera([0, 0, 0]);
     renderer.setRoot(camera);
 
-    var sceneX = 256;
-    var sceneY = 256;
+    var sceneX = 256 * 3;
+    var sceneY = 256 * 3;
 
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
@@ -116,8 +116,6 @@ function initServer() {
     });
 
     server.on('join', function(obj) {
-        console.log('joined: ' + obj.id);
-
         var cube = new sh.Cube([0, 50, 0],
                                null,
                                [10, 10, 10],
@@ -135,7 +133,6 @@ function initServer() {
     });
 
     server.on('move', function(obj) {
-        console.log('move: ' + obj);
         var node = renderer.getObject('player' + obj.from);
         if(node) {
             node.setPos(obj.x, Terrain.getHeight(obj.x, obj.y) + 20, obj.y);

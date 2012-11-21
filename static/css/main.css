@@ -67,6 +67,15 @@ canvas {
     font-style: italic;
 }
 
+#messages .server {
+    color: #ff6666;
+}
+
+#messages .me {
+    font-style: italic;
+    color: #9999dd;
+}
+
 .type {
     width: 100%;
     margin: 0;

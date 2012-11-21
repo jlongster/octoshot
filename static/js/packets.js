@@ -8,22 +8,17 @@
         ['from', 'int32']
     ]);
 
-    var joinPacket = packetType(basePacket, [
-        ['id', 'int32']
-    ]);
-
-    var leavePacket = packetType(basePacket, [
-        ['id', 'int32']        
-    ]);
-
     var movePacket = packetType(basePacket, [
         ['x', 'float'],
         ['y', 'float']
     ]);
 
     var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
+    var joinPacket = jsPacketType(basePacket, ['id', 'name']);
+    var leavePacket = jsPacketType(basePacket, ['id', 'name']);
     var messagePacket = jsPacketType(basePacket, ['name', 'message']);
-    var nameChangePacket = jsPacketType(basePacket, ['name']);
+    var cmdPacket = jsPacketType(basePacket, ['method', 'args']);
+    var cmdResPacket = jsPacketType(basePacket, ['method', 'res']);
 
     function jsPacketType(inherit, fields) {
         if(!fields) {
@@ -201,7 +196,8 @@
         leavePacket: leavePacket,
         movePacket: movePacket,
         messagePacket: messagePacket,
-        nameChangePacket: nameChangePacket,
+        cmdPacket: cmdPacket,
+        cmdResPacket: cmdResPacket,
 
         parsePacket: parsePacket,
         makePacket: makePacket,
