@@ -32,19 +32,24 @@ function initMessages() {
                 msg + '</div>';
         };
 
-        msg = msg.replace(/&/g, '&amp;')
-            .replace(/"/g, '&quot;')
-            .replace(/'/g, '&#39;')
-            .replace(/</g, '&lt;')
-            .replace(/>/g, '&gt;')
-            .replace(/ /g, '&nbsp;')
-            .replace(/\n/g, '<br />');
-
+        // Scrub the name. The message part is trusted from the
+        // server.
         name = name.replace(/&/g, '&amp;')
             .replace(/"/g, '&quot;')
             .replace(/'/g, '&#39;')
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
+
+        if(name == 'server') {
+            msg = msg.replace(/&/g, '&amp;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/ /g, '&nbsp;')
+                .replace(/\n/g, '<br />');
+
+        }
 
         messages.append(format(msg, name));
         messages[0].scrollTop = 100000;

@@ -46,9 +46,9 @@ canvas {
 
 #chat {
     position: absolute;
-    top: 10px;
-    left: 10px;
-    width: 40%;
+    top: 0;
+    right: 0;
+    width: 50%;
     background-color: black;
     border: 1px solid grey;
     opacity: .7;
@@ -58,7 +58,7 @@ canvas {
 
 #messages {
     overflow: auto;
-    height: 200px;
+    height: 300px;
 }
 
 #messages span.name {

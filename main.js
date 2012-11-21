@@ -1,8 +1,9 @@
+var fs = require('fs');
 var express = require('express');
+var remix = require('webremix');
 var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
-var fs = require('fs');
 
 var app = express();
 var server = require('http').createServer(app);
@@ -49,15 +50,25 @@ function handlePacket(user, data) {
         broadcast(user, p.makePacket(obj, p.movePacket));
         break;
     case p.messagePacket:
-        packet = p.messagePacket({
-            type: p.messagePacket.typeId,
-            from: user.id,
-            name: user.name,
-            message: packet.message
-        });
+        var message = packet.message.replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/ /g, '&nbsp;')
+            .replace(/\n/g, '<br />');
 
-        broadcast(user, packet);
-        user.stream.write(packet);
+        remix.generate(message, function(err, res) {
+            packet = p.messagePacket({
+                type: p.messagePacket.typeId,
+                from: user.id,
+                name: user.name,
+                message: res
+            });
+
+            broadcast(user, packet);
+            user.stream.write(packet);
+        });
         break;
     case p.cmdPacket:
         var method = packet.method;

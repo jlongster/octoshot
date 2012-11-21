@@ -163,12 +163,12 @@ function heartbeat() {
 }
 
 $(function() {
-    stats = new Stats();
-    //stats.setMode(1);
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.right = '0px';
-    stats.domElement.style.top = '0px';
-    document.body.appendChild(stats.domElement);
+    // stats = new Stats();
+    // //stats.setMode(1);
+    // stats.domElement.style.position = 'absolute';
+    // stats.domElement.style.right = '0px';
+    // stats.domElement.style.top = '0px';
+    // document.body.appendChild(stats.domElement);
 
     resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
     resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
