@@ -39,15 +39,11 @@ var SceneNode = sh.Obj.extend({
 
         this.transformLoc = null;
         this.normalLoc = null;
+        this.shaders = ['default.vsh', 'default.fsh'];
     },
 
     setMaterial: function(shaders) {
-        if(shaders) {
-            this.shaders = shaders;
-        }
-        else if(!this.shaders) {
-            this.shaders = ['default.vsh', 'default.fsh'];
-        }
+        this.shaders = shaders;
     },
 
     addObject: function(obj, inits) {

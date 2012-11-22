@@ -6,7 +6,6 @@
                                    [10, 10, 10],
                                    { centered: true });
             cube.id = 'player' + obj.id;
-            cube.setMaterial(sh.Shaders.getProgram('default'));
             camera.addObject(cube);
         });
 

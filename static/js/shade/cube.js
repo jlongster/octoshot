@@ -160,19 +160,16 @@ sh.Cube = sh.SceneNode.extend({
             mat4.identity(this.preMatrix);
             mat4.translate(this.preMatrix, [-.5, -.5, -.5]);
         }
-    },
 
-    setMaterial: function(program) {
         if(!sh.Cube.mesh) {
             sh.Cube.mesh = new sh.CubeMesh();
             sh.Cube.mesh.create();
         }
-
-        this.parent(program);
     },
 
     render: function() {
-        sh.Cube.mesh.render(this.program, this.wireframe);
+        // TODO: don't dig into the program object like this
+        sh.Cube.mesh.render(this._program.program, this.wireframe);
 
         // if(normalLocation != -1) {
         //     gl.disableVertexAttribArray(normalLocation);
