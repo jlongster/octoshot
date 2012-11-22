@@ -63,6 +63,16 @@ function convertToWireframe(indices) {
     return arr;
 }
 
+function notify(msg) {
+    var n = $('#notification');
+    n.text(msg);
+    n.addClass('open');
+
+    setTimeout(function() {
+        n.removeClass('open');
+    }, 1000);
+}
+
 function init() {
     renderer = new sh.Renderer();
     camera = new sh.Camera([0, 0, 0]);
@@ -83,6 +93,8 @@ function init() {
     messages.init();
 
     heartbeat();
+
+    notify("Press T to bring up chat, ESC to close it");
 }
 
 var last = Date.now();
