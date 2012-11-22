@@ -15,23 +15,29 @@ sh.Camera = sh.SceneNode.extend({
 
     update: function(dt) {
         var moved = this.moved = false;
-        var mouse = getMouseMoved();
-        this.yaw -= mouse[0] * .25 * dt;
-        this.pitch -= mouse[1] * .25 * dt;
+        var mouse = input.getMouseMoved();
+        var yaw = this.yaw;
+        var pitch = this.pitch;
+
+        yaw -= mouse[0] * .01;
+        pitch -= mouse[1] * .01;
 
         if(mouse[0] !== 0 || mouse[1] !== 0) {
             moved = true;
         }
 
-        if((isDown('LEFT') || isDown('a')) && !isMouseDown()) {
-            this.yaw += 1 * dt;
+        if((input.isDown('LEFT') || input.isDown('a')) && !input.isMouseDown()) {
+            yaw += .02;
             moved = true;
         }
 
-        if((isDown('RIGHT') || isDown('d')) && !isMouseDown()) {
-            this.yaw -= 1 * dt;
+        if((input.isDown('RIGHT') || input.isDown('d')) && !input.isMouseDown()) {
+            yaw -= .02;
             moved = true;
         }
+
+        this.yaw = yaw;
+        this.pitch = Math.max(Math.min(Math.PI / 2.0, pitch), -Math.PI / 2.0);
 
         var globalQuat = quat4.fromAngleAxis(-this.pitch, [1, 0, 0]);
         quat4.rotateY(globalQuat, -this.yaw);
@@ -48,22 +54,22 @@ sh.Camera = sh.SceneNode.extend({
         vec3.scale(forward, 180*dt, forward);
         vec3.scale(left, 100*dt, left);
 
-        if((isDown('LEFT') || isDown('a')) && isMouseDown()) {
+        if((input.isDown('LEFT') || input.isDown('a')) && input.isMouseDown()) {
             vec3.add(this.pos, left);
             moved = true;
         }
 
-        if((isDown('RIGHT') || isDown('d')) && isMouseDown()) {
+        if((input.isDown('RIGHT') || input.isDown('d')) && input.isMouseDown()) {
             vec3.subtract(this.pos, left);
             moved = true;
         }
 
-        if(isDown('UP') || isDown('w')) {
+        if(input.isDown('UP') || input.isDown('w')) {
             vec3.add(this.pos, forward);
             moved = true;
         }
 
-        if(isDown('DOWN') || isDown('s')) {
+        if(input.isDown('DOWN') || input.isDown('s')) {
             vec3.subtract(this.pos, forward);
             moved = true;
         }

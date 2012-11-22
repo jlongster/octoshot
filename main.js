@@ -198,7 +198,7 @@ bserver.on('connection', function(client) {
             type: p.messagePacket.typeId,
             from: 0,
             name: 'server',
-            message: 'Welcome!'
+            message: 'Welcome ' + user.name + '!'
         }));
 
         stream.write(p.messagePacket({

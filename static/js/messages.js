@@ -1,15 +1,11 @@
-
-function initMessages() {
-    var input = document.getElementById('message-input');
-    var messages = $('#messages');
-
+(function() {
     function handleCommand(cmd) {
         if(cmd[0] != '/') {
             return false;
         }
 
         // Scrub scrub scrub
-        var val = input.value;
+        var val = el.val();
         val = val.replace(/\s+/g, ' ');
         val = val.replace(/(^\s*|\s*$)/g, '');
 
@@ -22,7 +18,9 @@ function initMessages() {
     }
 
     function printMessage(msg, name, format) {
-        if(messages.children().length > 100) {
+        var messages = $('#messages');
+
+        if(messages.children().length > 50) {
             messages.children().first().remove();
         }
 
@@ -55,33 +53,55 @@ function initMessages() {
         messages[0].scrollTop = 100000;
     }
 
-    input.onkeydown = function(e) {
-        e.stopPropagation();
+    function init() {
+        var el = $('#message-input');
 
-        if(e.keyCode == 13) {
-            var val = input.value;
+        input.on('t', function() {
+            var chat = $('#chat');
+            chat.removeClass('closed');
+            chat.find('.type input').focus();
+        });
 
-            if(!handleCommand(val)) {
-                server.sendMessage(val);
+        input.on('esc', function() {
+            var chat = $('#chat');
+            chat.addClass('closed');
+            chat.find('.type input').blur();
+        });
+
+        el.on('keydown', function(e) {
+            if(e.keyCode != 27) {
+                e.stopPropagation();
             }
-            input.value = '';
-        }
+
+            if(e.keyCode == 13) {
+                var val = el.val();
+
+                if(!handleCommand(val)) {
+                    server.sendMessage(val);
+                }
+                el.val('');
+            }
+        });
+
+        server.on('message', function(obj) {
+            printMessage(obj.message, obj.name);
+        });
+
+        server.on('cmdRes', function(obj) {
+            switch(obj.method) {
+            case 'users':
+            case 'names':
+                printMessage('Users: '  + obj.res.join(' '), 'server');
+                break;
+            case 'me':
+                printMessage(obj.res, '', function(msg, name) {
+                    return '<div class="me">' + msg + '</div>';
+                });
+            }
+        });
+    }
+
+    window.messages = {
+        init: init
     };
-
-    server.on('message', function(obj) {
-        printMessage(obj.message, obj.name);
-    });
-
-    server.on('cmdRes', function(obj) {
-        switch(obj.method) {
-        case 'users':
-        case 'names':
-            printMessage('Users: '  + obj.res.join(' '), 'server');
-            break;
-        case 'me':
-            printMessage(obj.res, '', function(msg, name) {
-                return '<div class="me">' + msg + '</div>';
-            });
-        }
-    });
-}
+})();

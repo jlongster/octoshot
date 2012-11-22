@@ -9,6 +9,7 @@ body {
     margin: 0;
     padding: 0;
     background-color: #222222;
+    overflow: hidden;
 }
 
 div {
@@ -49,16 +50,23 @@ canvas {
     top: 0;
     right: 0;
     width: 50%;
+    height: 100%;
     background-color: black;
     border: 1px solid grey;
-    opacity: .9;
+    opacity: .8;
     font-size: 14px;
     color: white;
+
+    transition: right .5s;
+}
+
+#chat.closed {
+    right: -40%;
 }
 
 #messages {
+    height: calc(100% - 45px);
     overflow: auto;
-    height: 500px;
 }
 
 #messages span.name {

@@ -23,6 +23,7 @@ var SceneNode = sh.Obj.extend({
         this.scale = scale || vec3.create([1, 1, 1]);
         this.transform = mat4.create();
         this.worldTransform = mat4.create();
+        this._program = null;
 
         this.quat = quat4.fromAngleAxis.apply(null, rot || [0.0, [0.0, 0.0, 1.0]]);
         this.useQuat = false;
@@ -33,19 +34,19 @@ var SceneNode = sh.Obj.extend({
         this._realTransform = mat4.create();
 
         this.children = [];
-        this.program = sh.Shaders.getProgram('default');
         this._dirty = true;
         this._dirtyWorld = true;
-        this.type = 'node';
+
+        this.transformLoc = null;
+        this.normalLoc = null;
     },
 
-    setMaterial: function(program) {
-        this.program = program;
-        this.transformLoc = gl.getUniformLocation(program, "transform");
-        this.normalLoc = gl.getUniformLocation(program, "normalMatrix");
-
-        if(this.normalLoc === -1) {
-            this.normalLoc = null;
+    setMaterial: function(shaders) {
+        if(shaders) {
+            this.shaders = shaders;
+        }
+        else if(!this.shaders) {
+            this.shaders = ['default.vsh', 'default.fsh'];
         }
     },
 

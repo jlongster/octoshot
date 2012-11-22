@@ -2,16 +2,16 @@
 sh.Renderer = sh.Obj.extend({
     init: function() {
         this.root = null;
-
+        this.persMatrix = mat4.create();
 
         this._objects = [];
         this._objectsById = {};
         this._bufferCache = {};
         this._normalMatrix = mat3.create();
+        this._programCache = {};
 
-        sh.Shaders.createProgram('default',
-                                 sh.Shaders.getShader('default-vertex'),
-                                 sh.Shaders.getShader('default-fragment'));
+        gl.enable(gl.DEPTH_TEST);
+        gl.enable(gl.CULL_FACE);
 
         var _this = this;
         sh.SceneNode.onAdd(function(obj) {
@@ -39,6 +39,10 @@ sh.Renderer = sh.Obj.extend({
         return this._objectsById[id];
     },
 
+    perspective: function(fov, ratio, near, far) {
+        mat4.perspective(fov, ratio, near, far, this.persMatrix);
+    },
+
     update: function(dt) {
         this.updateObject(this.root, dt);
     },
@@ -55,6 +59,31 @@ sh.Renderer = sh.Obj.extend({
         }
     },
 
+    loadProgram: function(obj) {
+        if('shaders' in obj) {
+            // Copy the shader array and sort it
+            var sorted = obj.shaders.slice(0);
+            sorted.sort();
+
+            // If a program with the same shaders already exists, use it
+            var cacheKey = sorted.join(';');
+            if(this._programCache[cacheKey]) {
+                return this._programCache[cacheKey];
+            }
+
+            var program = new sh.Program(sorted);
+
+            // Set the perspective matrix
+            var persLoc = program.getUniformLocation('pers');
+            gl.uniformMatrix4fv(persLoc, false, this.persMatrix);
+
+            this._programCache[cacheKey] = program;
+            return program;
+        }
+
+        return null;
+    },
+
     render: function() {
         var objs = this._objects;
         var lastProg = null;
@@ -62,25 +91,33 @@ sh.Renderer = sh.Obj.extend({
         for(var i=0, l=objs.length; i<l; i++) {
             var obj = objs[i];
 
-            if(obj.program && !lastProg || lastProg != obj.program) {
-                gl.useProgram(obj.program);
-                lastProg = obj.program;
+            if(!obj._program) {
+                obj._program = this.loadProgram(obj);
             }
 
-            gl.uniformMatrix4fv(obj.transformLoc,
-                                false,
-                                obj._realTransform);
+            var prog = obj._program;
 
-            if(obj.normalLoc) {
-                mat4.toInverseMat3(obj._realTransform, this._normalMatrix);
-                mat3.transpose(this._normalMatrix);
-                
-                gl.uniformMatrix3fv(obj.normalLoc,
+            if(prog) {
+                if(!lastProg || lastProg != prog) {
+                    prog.use();
+                    lastProg = prog;
+                }
+
+                gl.uniformMatrix4fv(prog.transformLoc,
                                     false,
-                                    this._normalMatrix);
-            }
+                                    obj._realTransform);
 
-            obj.render();
+                if(prog.normalLoc) {
+                    mat4.toInverseMat3(obj._realTransform, this._normalMatrix);
+                    mat3.transpose(this._normalMatrix);
+                    
+                    gl.uniformMatrix3fv(prog.normalLoc,
+                                        false,
+                                        this._normalMatrix);
+                }
+
+                obj.render();
+            }
         }
     },
 

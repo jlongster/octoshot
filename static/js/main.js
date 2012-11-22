@@ -63,87 +63,32 @@ function convertToWireframe(indices) {
     return arr;
 }
 
-var Player = sh.SceneNode.extend({});
-
 function init() {
-    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
     renderer = new sh.Renderer();
-
     camera = new sh.Camera([0, 0, 0]);
+    server = new ServerConnection();
+
     renderer.setRoot(camera);
+    renderer.perspective(45, w / h, 1.0, 5000.0);
 
     var sceneX = 256 * 3;
     var sceneY = 256 * 3;
-
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
     camera.addObject(terrain);
 
-    var player = new Player();
-    camera.addObject(player);
-
-    var pers = mat4.create();
-    mat4.perspective(45, w / h, 1.0, 5000.0, pers);
-
-    sh.Shaders.iterPrograms(function(program) {
-        gl.useProgram(program);
-        var persLoc = gl.getUniformLocation(program, "pers");
-        gl.uniformMatrix4fv(persLoc, false, pers);
-    });
-
     document.getElementById('loading').style.display = 'none';
 
-    initServer();
-    initMessages();
+    serverEvents.init();
+    messages.init();
 
-    gl.enable(gl.DEPTH_TEST);
-    gl.enable(gl.CULL_FACE);
     heartbeat();
-}
-
-function initServer() {
-    server = new Server();
-
-    server.on('newUser', function(obj) {
-        var el = $('#notification');
-        el.text('Your username: ' + obj.name)
-            .addClass('open');
-
-        setTimeout(function() {
-            el.removeClass('open');
-        }, 1000);
-    });
-
-    server.on('join', function(obj) {
-        var cube = new sh.Cube([0, 50, 0],
-                               null,
-                               [10, 10, 10],
-                               { centered: true });
-        cube.id = 'player' + obj.id;
-        cube.setMaterial(sh.Shaders.getProgram('default'));
-        camera.addObject(cube);
-    });
-
-    server.on('leave', function(obj) {
-        var node = renderer.getObject('player' + obj.id);
-        if(node) {
-            node._parent.removeObject(node);
-        }
-    });
-
-    server.on('move', function(obj) {
-        var node = renderer.getObject('player' + obj.from);
-        if(node) {
-            node.setPos(obj.x, Terrain.getHeight(obj.x, obj.y) + 20, obj.y);
-        }
-    });
 }
 
 var last = Date.now();
 function heartbeat() {
     var now = Date.now();
-    var dt = (now - last) / 1000.;
+    var dt = Math.min((now - last) / 1000., 1.0);
 
     renderer.update(dt);
 
@@ -163,15 +108,23 @@ function heartbeat() {
 }
 
 $(function() {
-    // stats = new Stats();
+    stats = new Stats();
     // //stats.setMode(1);
     // stats.domElement.style.position = 'absolute';
     // stats.domElement.style.right = '0px';
     // stats.domElement.style.top = '0px';
     // document.body.appendChild(stats.domElement);
 
-    resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
-    resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
-    resources.load('resources/grass.jpg');
+    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+    // resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
+    // resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
+    resources.load([
+        'shaders/default.fsh',
+        'shaders/default.vsh',
+        'shaders/terrain.fsh',
+        'shaders/terrain.vsh',
+        'img/grass.jpg'
+    ]);
     resources.onReady(init);
 });

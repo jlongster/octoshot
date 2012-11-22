@@ -1,5 +1,5 @@
 
-var Server = sh.Obj.extend({
+var ServerConnection = sh.Obj.extend({
     init: function() {
         var _this = this;
         var client = this.client = new BinaryClient('ws://' + location.host);

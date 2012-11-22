@@ -5,7 +5,18 @@ sh.Resources = sh.Obj.extend({
         this.readyCallbacks = [];
     },
 
-    load: function(url /* , loader args */) {
+    load: function(urlOrArr) {
+        if(urlOrArr instanceof Array) {
+            urlOrArr.forEach(function(url) {
+                this._load(url);
+            }, this);
+        }
+        else {
+            this._load(urlOrArr);
+        }
+    },
+
+    _load: function(url /* , loader args */) {
         var args = Array.prototype.slice.call(arguments);
 
         if(this.resourceCache[url] === undefined) {
@@ -16,6 +27,12 @@ sh.Resources = sh.Obj.extend({
 
             if(ext == 'mesh') {
                 loader = this.loadMesh;
+            }
+            else if(ext == 'vsh') {
+                loader = this.loadVertexShader;
+            }
+            else if(ext == 'fsh') {
+                loader = this.loadFragmentShader;
             }
             else {
                 loader = this.loadImage;
@@ -40,15 +57,13 @@ sh.Resources = sh.Obj.extend({
         console.log('failed to load resource: ' + url);
     },
 
-    loadMesh: function(url, attribArrays) {
+    loadText: function(url, then) {
         var req = new XMLHttpRequest();
         var _this = this;
 
         req.onload = function() {
             if(req.status === 200 || req.status === 0) {
-                var mesh = sh.util.decompressSimpleMesh(req.responseText,
-                                                        attribArrays);
-                _this.onLoaded(url, mesh);
+                then(req.responseText);
             }
         };
 
@@ -58,6 +73,40 @@ sh.Resources = sh.Obj.extend({
 
         req.open('GET', url, true);
         req.send(null);
+    },
+
+    loadMesh: function(url, attribArrays) {
+        this.loadText(url, function(src) {
+            var mesh = sh.util.decompressSimpleMesh(src, attribArrays);
+            _this.onLoaded(url, mesh);
+        });
+    },
+
+    loadVertexShader: function(url) {
+        this._loadShader(url, gl.VERTEX_SHADER);
+    },
+
+    loadFragmentShader: function(url) {
+        this._loadShader(url, gl.FRAGMENT_SHADER);
+    },
+
+    _loadShader: function(url, type) {
+        var _this = this;
+
+        this.loadText(url, function(src) {
+            var shader = gl.createShader(type);
+            gl.shaderSource(shader, src);
+            gl.compileShader(shader);
+
+            var status = gl.getShaderParameter(shader, gl.COMPILE_STATUS);
+            if(!status) {
+                var err = gl.getShaderInfoLog(shader);
+                gl.deleteShader(shader);
+                throw new Error('shader compilation error (' + id + '): ' + err);
+            }
+
+            _this.onLoaded(url, shader);
+        });
     },
 
     loadImage: function(url) {

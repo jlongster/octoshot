@@ -8,10 +8,6 @@ var Terrain = sh.SceneNode.extend({
         this.sizeX = sizeX;
         this.sizeY = sizeY;
 
-        sh.Shaders.createProgram('terrain',
-                                 sh.Shaders.getShader('vertex-shader'),
-                                 sh.Shaders.getShader('fragment-shader'));
-
         var curX = 0;
         var curY = 0;
 
@@ -61,8 +57,7 @@ var TerrainChunk = sh.SceneNode.extend({
         this.sizeX = sizeX;
         this.sizeY = sizeY;
 
-
-        this.setMaterial(sh.Shaders.getProgram('terrain'));
+        this.setMaterial(['terrain.vsh', 'terrain.fsh']);
     },
 
     create: function() {
@@ -155,7 +150,7 @@ var TerrainChunk = sh.SceneNode.extend({
         gl.bindTexture(gl.TEXTURE_2D, this.tex);
         gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
         gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE,
-                      resources.get('resources/grass.jpg'));
+                      resources.get('img/grass.jpg'));
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
 
@@ -166,6 +161,7 @@ var TerrainChunk = sh.SceneNode.extend({
 
         for(var y=0; y<sizeY; y++) {
             for(var x=0; x<sizeX; x++) {
+
                 var i = (y*sizeX + x) * 2;
                 coords[i] = x/sizeX * 2;
                 coords[i+1] = y/sizeY * 2;
@@ -177,21 +173,21 @@ var TerrainChunk = sh.SceneNode.extend({
 
     render: function() {
         gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
-        var positionLocation = gl.getAttribLocation(this.program, "a_position");
+        var positionLocation = this._program.getAttribLocation('a_position');
         if(positionLocation != -1) {
             gl.enableVertexAttribArray(positionLocation);
             gl.vertexAttribPointer(positionLocation, 3, gl.FLOAT, false, 0, 0);
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
-        var texLocation = gl.getAttribLocation(this.program, "a_texcoord");
+        var texLocation = this._program.getAttribLocation('a_texcoord');
         if(texLocation != -1) {
             gl.enableVertexAttribArray(texLocation);
             gl.vertexAttribPointer(texLocation, 2, gl.FLOAT, false, 0, 0);
         }
 
         gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
-        var normalLocation = gl.getAttribLocation(this.program, "a_normal");
+        var normalLocation = this._program.getAttribLocation('a_normal');
         if(normalLocation != -1) {
             gl.enableVertexAttribArray(normalLocation);
             gl.vertexAttribPointer(normalLocation, 3, gl.FLOAT, false, 0, 0);
@@ -199,7 +195,7 @@ var TerrainChunk = sh.SceneNode.extend({
 
         gl.activeTexture(gl.TEXTURE0);
         gl.bindTexture(gl.TEXTURE_2D, this.tex);
-        var sampleLoc = gl.getUniformLocation(this.program, "sampler");
+        var sampleLoc = this._program.getUniformLocation('sampler');
         if(!sampleLoc != -1) {
             gl.uniform1i(sampleLoc, 0);
         }
