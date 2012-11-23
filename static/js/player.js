@@ -1,5 +1,5 @@
 
-var Player = sh.SceneNode.extend({
+var Player = Entity.extend({
     init: function(opts) {
         this.parent(opts.pos, opts.rot, opts.scale);
         this.camera = camera;
