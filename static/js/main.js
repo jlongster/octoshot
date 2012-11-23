@@ -78,14 +78,15 @@ function init() {
     camera = new sh.Camera([0, 0, 0]);
     server = new ServerConnection();
 
-    renderer.setRoot(camera);
+    renderer.setCamera(camera);
     renderer.perspective(45, w / h, 1.0, 5000.0);
+    renderer.addBehavior(new Player({ camera: camera }));
 
     var sceneX = 256 * 3;
     var sceneY = 256 * 3;
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
-    camera.addObject(terrain);
+    renderer.addObject(terrain);
 
     document.getElementById('loading').style.display = 'none';
 

@@ -1,8 +1,8 @@
 attribute vec3 a_position;
 attribute vec2 a_texcoord;
 attribute vec3 a_normal;
-uniform mat4 pers;
-uniform mat4 transform;
+uniform mat4 worldTransform;
+uniform mat4 modelTransform;
 uniform mat3 normalMatrix;
 varying vec3 v;
 varying vec2 texcoord;
@@ -14,7 +14,7 @@ float rand(vec2 n) {
 }
 
 void main() {
-    gl_Position = pers * transform * vec4(a_position, 1);
+    gl_Position = worldTransform * modelTransform * vec4(a_position, 1);
     v = a_position;
     normal = normalMatrix * a_normal;
     texcoord = a_texcoord;

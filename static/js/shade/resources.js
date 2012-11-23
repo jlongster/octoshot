@@ -102,7 +102,7 @@ sh.Resources = sh.Obj.extend({
             if(!status) {
                 var err = gl.getShaderInfoLog(shader);
                 gl.deleteShader(shader);
-                throw new Error('shader compilation error (' + id + '): ' + err);
+                throw new Error('shader compilation error (' + url + '): ' + err);
             }
 
             _this.onLoaded(url, shader);

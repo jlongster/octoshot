@@ -5,7 +5,7 @@
         }
 
         // Scrub scrub scrub
-        var val = el.val();
+        var val = cmd;
         val = val.replace(/\s+/g, ' ');
         val = val.replace(/(^\s*|\s*$)/g, '');
 

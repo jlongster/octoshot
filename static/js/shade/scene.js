@@ -25,7 +25,7 @@ var SceneNode = sh.Obj.extend({
         this.worldTransform = mat4.create();
         this._program = null;
 
-        this.quat = quat4.fromAngleAxis.apply(null, rot || [0.0, [0.0, 0.0, 1.0]]);
+        this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;
 
         this._scaleMatrix = mat4.create();
@@ -129,7 +129,7 @@ var SceneNode = sh.Obj.extend({
 
     rotateX: function(v) {
         if(this.useQuat) {
-            quat4.rotateX(this.rot, v);
+            quat4.rotateX(this.quat, v);
         }
         else {
             this.rot[0] += v;
@@ -139,7 +139,7 @@ var SceneNode = sh.Obj.extend({
 
     rotateY: function(v) {
         if(this.useQuat) {
-            quat4.rotateY(this.rot, v);
+            quat4.rotateY(this.quat, v);
         }
         else {
             this.rot[1] += v;
@@ -149,7 +149,7 @@ var SceneNode = sh.Obj.extend({
 
     rotateZ: function(v) {
         if(this.useQuat) {
-            quat4.rotateZ(this.rot, v);
+            quat4.rotateZ(this.quat, v);
         }
         else {
             this.rot[2] += v;
@@ -201,9 +201,9 @@ var SceneNode = sh.Obj.extend({
             else {
                 mat4.identity(this.transform);
                 mat4.translate(this.transform, this.pos);
-                mat4.rotateX(this.transform, this.rot[0]);
-                mat4.rotateY(this.transform, this.rot[1]);
                 mat4.rotateZ(this.transform, this.rot[2]);
+                mat4.rotateY(this.transform, this.rot[1]);
+                mat4.rotateX(this.transform, this.rot[0]);
                 mat4.scale(this.transform, this.scale);
             }
 

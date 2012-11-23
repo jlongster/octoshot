@@ -6,7 +6,7 @@
                                    [10, 10, 10],
                                    { centered: true });
             cube.id = 'player' + obj.id;
-            camera.addObject(cube);
+            renderer.addObject(cube);
         });
 
         server.on('leave', function(obj) {

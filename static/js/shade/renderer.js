@@ -1,14 +1,17 @@
 
 sh.Renderer = sh.Obj.extend({
     init: function() {
-        this.root = null;
+        this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
 
         this._objects = [];
         this._objectsById = {};
         this._bufferCache = {};
-        this._normalMatrix = mat3.create();
         this._programCache = {};
+        this._behaviors = [];
+
+        this._normalMatrix = mat3.create();
+        this._worldTransform = mat4.create();
 
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
@@ -31,12 +34,20 @@ sh.Renderer = sh.Obj.extend({
         });
     },
 
-    setRoot: function(obj) {
-        this.root = obj;
+    setCamera: function(camera) {
+        this.camera = camera;
+    },
+
+    addObject: function(obj) {
+        this.root.addObject(obj);
     },
 
     getObject: function(id) {
         return this._objectsById[id];
+    },
+
+    addBehavior: function(obj) {
+        this._behaviors.push(obj);
     },
 
     perspective: function(fov, ratio, near, far) {
@@ -44,7 +55,12 @@ sh.Renderer = sh.Obj.extend({
     },
 
     update: function(dt) {
+        this.camera.updateMatrices();
         this.updateObject(this.root, dt);
+
+        for(var i=0, l=this._behaviors.length; i<l; i++) {
+            this._behaviors[i].update(dt);
+        }
     },
 
     updateObject: function(obj, dt, force) {
@@ -60,7 +76,7 @@ sh.Renderer = sh.Obj.extend({
     },
 
     loadProgram: function(obj) {
-        if('shaders' in obj) {
+        if(obj.shaders) {
             // Copy the shader array and sort it
             var sorted = obj.shaders.slice(0);
             sorted.sort();
@@ -72,11 +88,6 @@ sh.Renderer = sh.Obj.extend({
             }
 
             var program = new sh.Program(sorted);
-
-            // Set the perspective matrix
-            var persLoc = program.getUniformLocation('pers');
-            gl.uniformMatrix4fv(persLoc, false, this.persMatrix);
-
             this._programCache[cacheKey] = program;
             return program;
         }
@@ -85,6 +96,14 @@ sh.Renderer = sh.Obj.extend({
     },
 
     render: function() {
+        if(!this.camera) {
+            return;
+        }
+
+        mat4.multiply(this.persMatrix,
+                      this.camera.inverseTransform,
+                      this._worldTransform);
+
         var objs = this._objects;
         var lastProg = null;
 
@@ -101,9 +120,15 @@ sh.Renderer = sh.Obj.extend({
                 if(!lastProg || lastProg != prog) {
                     prog.use();
                     lastProg = prog;
+
+                    if(prog.worldTransformLoc) {
+                        gl.uniformMatrix4fv(prog.worldTransformLoc,
+                                            false,
+                                            this._worldTransform);
+                    }
                 }
 
-                gl.uniformMatrix4fv(prog.transformLoc,
+                gl.uniformMatrix4fv(prog.modelTransformLoc,
                                     false,
                                     obj._realTransform);
 

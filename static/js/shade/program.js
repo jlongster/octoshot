@@ -18,7 +18,8 @@ sh.Program = sh.Obj.extend({
 
         // Cache uniform locations
         this.program = program;
-        this.transformLoc = this.getUniformLocation("transform");
+        this.worldTransformLoc = this.getUniformLocation("worldTransform");
+        this.modelTransformLoc = this.getUniformLocation("modelTransform");
         this.normalLoc = this.getUniformLocation("normalMatrix");
     },
 
