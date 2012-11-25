@@ -6,6 +6,11 @@
             this.parent(opts.pos, opts.rot, opts.scale);
             this.speed = 100;
 
+            this.goodPos = vec3.create();
+            vec3.set(this.pos, this.goodPos);
+            this.goodRot = vec3.create();
+            vec3.set(this.rot, this.goodRot);            
+
             this.sequenceId = 0;
             this.serverUser = opts.serverUser;
             this.getHeight = opts.getHeight;
@@ -14,28 +19,6 @@
 
             this.stateBuffer = [];
             this.packetBuffer = [];
-
-            this.worker = new Worker('/js/player-apply.js');
-            this.worker.onmessage = function(e) {
-                var msg = e.data;
-                switch(msg[0]) {
-                case 'setState':
-                    this.pos = msg[1];
-                    this.rot = msg[2];
-                    break;
-                }
-            };
-
-            var goodPos = vec3.create();
-            var goodRot = vec3.create();
-            vec3.set(this.pos, goodPos);
-            vec3.set(this.rot, goodRot);            
-
-            this.worker.postMessage([
-                'setGoodStuff',
-                goodPos,
-                goodRot
-            ]);
         },
 
         update: function(dt) {
@@ -186,16 +169,15 @@
         },
 
         saveState: function(pos, rot, sequenceId) {
-            this.worker.postMessage([
-                'saveState',
-                { x: pos[0],
-                  y: pos[1],
-                  z: pos[2],
-                  rotX: rot[0],
-                  rotY: rot[1],
-                  rotZ: rot[2],
-                  sequenceId: sequenceId }
-            ]);
+            this.stateBuffer.push({
+                x: pos[0],
+                y: pos[1],
+                z: pos[2],
+                rotX: rot[0],
+                rotY: rot[1],
+                rotZ: rot[2],
+                sequenceId: sequenceId
+            });
         },
 
         resetState: function() {
@@ -211,10 +193,39 @@
         },
 
         applyState: function(state) {
-            this.worker.postMessage([
-                'applyState',
-                state
-            ]);
+            // The last known good state!!!!
+            var goodPos = this.goodPos;
+            var goodRot = this.goodRot;
+            var buffer = this.stateBuffer;
+            var pos = this.pos;
+            var rot = this.rot;
+
+            if(state.sequenceId != buffer[0].sequenceId) {
+                throw new Error('mismatched sequence ids OH NOES ' +
+                                'GOOD LUCK DEBUGGING THAT');
+            }
+
+            // Add the new good state to the current good state,
+            // ignoring the predicted state
+            // console.log('predicted [' + buffer[0].sequenceId + ']: ',
+            //             buffer[0].x, buffer[0].y, buffer[0].z);
+            // console.log('server [' + state.sequenceId + ']: ',
+            //             state.x, state.y, state.z);
+
+            vec3.add(goodPos, [state.x, state.y, state.z]);
+            vec3.add(goodRot, [state.rotX, state.rotY, state.rotZ]);
+
+            vec3.set(goodPos, pos);
+            vec3.set(goodRot, rot);
+
+            // Apply the rest to get the final state
+            for(var i=1, l=buffer.length; i<l; i++) {
+                var pState = buffer[i];
+                vec3.add(pos, [pState.x, pState.y, pState.z]);
+                vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+            }
+
+            buffer.shift();
         }
     });
 
