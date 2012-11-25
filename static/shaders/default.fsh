@@ -2,8 +2,7 @@ precision highp float;
 varying vec3 normal;
 
 void main() {
-
-    vec3 light = normalize(vec3(0.0, 1.0, 0.0));
+    vec3 light = normalize(vec3(1.0, 1.0, 0.0));
     vec3 nNormal = normalize(normal);
     float diffuse = dot(nNormal, light);
 

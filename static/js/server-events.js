@@ -16,12 +16,17 @@
             }
         });
 
-        server.on('move', function(obj) {
-            var node = renderer.getObject('player' + obj.from);
+        server.on('state', function(obj) {
+            var node;
+            if(obj.from !== 0) {
+                node = renderer.getObject('player' + obj.from);
+            }
+            else {
+                node = renderer.getCamera();
+            }
+
             if(node) {
-                node.setPos(obj.x,
-                            Terrain.getHeight(obj.x, obj.y) + 20,
-                            obj.y);
+                node.applyState(obj);
             }
         });
     }

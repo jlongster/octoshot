@@ -3,6 +3,7 @@ var ServerConnection = sh.Obj.extend({
     init: function() {
         var _this = this;
         var client = this.client = new BinaryClient('ws://' + location.host);
+        this.sequence = 0;
         this.events = {};
 
         client.on('open', function() {
@@ -29,9 +30,9 @@ var ServerConnection = sh.Obj.extend({
         }
 
         switch(packets.getPacketDesc(obj.type)) {
-        case packets.movePacket:
-            obj = packets.parsePacket(packet, packets.movePacket);
-            this.fire('move', obj);
+        case packets.statePacket:
+            obj = packets.parsePacket(packet, packets.statePacket);
+            this.fire('state', obj);
             break;
         case packets.joinPacket:
             this.fire('join', obj);
@@ -68,11 +69,13 @@ var ServerConnection = sh.Obj.extend({
         }
     },
 
-    sendMove: function(x, y) {
-        var obj = { type: packets.movePacket.typeId, from: 0,
-                    x: x, y: y };
-        var p = packets.makePacket(obj, packets.movePacket);
-        this.stream.write(p);
+    sendInput: function(input) {
+        if(this.stream) {
+            input.type = packets.inputPacket.typeId;
+            input.from = 0;
+            var p = packets.makePacket(input, packets.inputPacket);
+            this.stream.write(p);
+        }
     },
 
     sendMessage: function(msg) {

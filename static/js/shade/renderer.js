@@ -38,6 +38,10 @@ sh.Renderer = sh.Obj.extend({
         this.camera = camera;
     },
 
+    getCamera: function() {
+        return this.camera;
+    },
+
     addObject: function(obj) {
         this.root.addObject(obj);
     },
@@ -55,7 +59,9 @@ sh.Renderer = sh.Obj.extend({
     },
 
     update: function(dt) {
+        this.camera.update(dt);
         this.camera.updateMatrices();
+
         this.updateObject(this.root, dt);
 
         for(var i=0, l=this._behaviors.length; i<l; i++) {

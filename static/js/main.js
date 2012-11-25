@@ -18,6 +18,7 @@ var renderer;
 var gl;
 var camera;
 var server;
+var player;
 
 var canvas = document.getElementById('canvas');
 canvas.width = w;
@@ -78,9 +79,9 @@ function init() {
     camera = new sh.Camera([0, 0, 0]);
     server = new ServerConnection();
 
-    renderer.setCamera(camera);
+    player = new Player([0, 0, 0]);
+    renderer.setCamera(player);
     renderer.perspective(45, w / h, 1.0, 5000.0);
-    renderer.addBehavior(new Player({ camera: camera }));
 
     var sceneX = 256 * 3;
     var sceneY = 256 * 3;
@@ -109,10 +110,6 @@ function heartbeat() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     renderer.render();
-
-    if(camera.moved) {
-        server.sendMove(camera.pos[0], camera.pos[2]);
-    }
 
     last = now;
     requestAnimFrame(heartbeat);

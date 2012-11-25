@@ -4,6 +4,8 @@ var remix = require('webremix');
 var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
+var shade = require('./static/js/node-shade');
+var Player = require('./static/js/player');
 
 var app = express();
 var server = require('http').createServer(app);
@@ -40,14 +42,15 @@ function handlePacket(user, data) {
     }
 
     switch(p.getPacketDesc(packet.type)) {
-    case p.movePacket:
-        packet = p.parsePacket(data, p.movePacket);
+    case p.inputPacket:
+        packet = p.parsePacket(data, p.inputPacket);
+        user.player.handleServerInput(packet);
 
-        var obj = { type: p.movePacket.typeId,
-                    from: user.id,
-                    x: packet.x,
-                    y: packet.y};
-        broadcast(user, p.makePacket(obj, p.movePacket));
+        // var obj = { type: p.inputPacket.typeId,
+        //             from: user.id,
+        //             x: packet.x,
+        //             y: packet.y};
+        // broadcast(user, p.makePacket(obj, p.inputPacket));
         break;
     case p.messagePacket:
         var message = packet.message;
@@ -173,7 +176,9 @@ bserver.on('connection', function(client) {
         user.stream = stream;
         user.id = userId;
         user.name = 'anon' + user.id;
-
+        user.player = new Player({
+            serverUser: user
+        });
 
         console.log(user.name + ' connected [' + CLIENTS.length + ']');
 
@@ -265,6 +270,12 @@ bserver.on('connection', function(client) {
         }
     });
 });
+
+setInterval(function() {
+    for(var i=0, l=CLIENTS.length; i<l; i++) {
+        CLIENTS[i].player.flushPackets();
+    }
+}, 100);
 
 // Fire up the server
 

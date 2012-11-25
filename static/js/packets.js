@@ -8,9 +8,26 @@
         ['from', 'int32']
     ]);
 
-    var movePacket = packetType(basePacket, [
+    var inputPacket = packetType(basePacket, [
+        ['dt', 'float'],
+        ['sequenceId', 'int32'],
+        ['mouseX', 'int32'],
+        ['mouseY', 'int32'],
+        ['mouseDown', 'int32'],
+        ['left', 'int32'],
+        ['right', 'int32'],
+        ['up', 'int32'],
+        ['down', 'int32']
+    ]);
+
+    var statePacket = packetType(basePacket, [
+        ['sequenceId', 'int32'],
         ['x', 'float'],
-        ['y', 'float']
+        ['y', 'float'],
+        ['z', 'float'],
+        ['rotX', 'float'],
+        ['rotY', 'float'],
+        ['rotZ', 'float']
     ]);
 
     var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
@@ -194,7 +211,8 @@
         newUserPacket: newUserPacket,
         joinPacket: joinPacket,
         leavePacket: leavePacket,
-        movePacket: movePacket,
+        inputPacket: inputPacket,
+        statePacket: statePacket,
         messagePacket: messagePacket,
         cmdPacket: cmdPacket,
         cmdResPacket: cmdResPacket,
