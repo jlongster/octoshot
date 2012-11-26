@@ -35,6 +35,7 @@ var ServerConnection = sh.Obj.extend({
             this.fire('state', obj);
             break;
         case packets.joinPacket:
+            obj = packets.parsePacket(packet, packets.joinPacket);
             this.fire('join', obj);
             break;
         case packets.leavePacket:

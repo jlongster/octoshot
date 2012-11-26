@@ -120,12 +120,12 @@ var SceneNode = sh.Obj.extend({
         this._dirty = true;
     },
 
-    // rotate: function(angle, axis) {
-
-    //     var rot = quat4.fromAngleAxis(angle, axis);
-    //     quat4.multiply(this.rot, rot);
-    //     this._dirty = true;
-    // },
+    rotate: function(x, y, z) {
+        this.rot[0] += x;
+        this.rot[1] += y;
+        this.rot[2] += z;
+        this._dirty = true;
+    },
 
     rotateX: function(v) {
         if(this.useQuat) {
@@ -179,12 +179,36 @@ var SceneNode = sh.Obj.extend({
         this._dirty = true;
     },
 
-    traverse: function(func) {
-        func(this);
+    moveLeft: function(v) {
+        var left = vec3.create([-1, 0, 0]);
+        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.multiplyVec3(quat, left);
+        vec3.scale(left, v);
+        this.translate(left[0], left[1], left[2]);
+    },
 
-        for(var i=0, l=this.children.length; i<l; i++) {
-            this.children[i].traverse(func);
-        }
+    moveRight: function(v) {
+        var right = vec3.create([1, 0, 0]);
+        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.multiplyVec3(quat, right);
+        vec3.scale(right, v);
+        this.translate(right[0], right[1], right[2]);
+    },
+
+    moveForward: function(v) {
+        var forward = vec3.create([0, 0, -1]);
+        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.multiplyVec3(quat, forward);
+        vec3.scale(forward, v);
+        this.translate(forward[0], forward[1], forward[2]);
+    },
+
+    moveBack: function(v) {
+        var back = vec3.create([0, 0, 1]);
+        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.multiplyVec3(quat, back);
+        vec3.scale(back, v);
+        this.translate(back[0], back[1], back[2]);
     },
 
     needsWorldUpdate: function() {

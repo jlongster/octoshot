@@ -17,21 +17,34 @@ sh.Renderer = sh.Obj.extend({
         gl.enable(gl.CULL_FACE);
 
         var _this = this;
-        sh.SceneNode.onAdd(function(obj) {
-            _this._objects.push(obj);
 
-            if(obj.id) {
-                _this._objectsById[obj.id] = obj;
+        function addObj(obj) {
+            if(_this._objects.indexOf(obj) === -1) {
+                _this._objects.push(obj);
+
+                if(obj.id) {
+                    _this._objectsById[obj.id] = obj;
+                }
+
+                for(var i=0, l=obj.children.length; i<l; i++) {
+                    addObj(obj.children[i]);
+                }
             }
-        });
+        }
+        sh.SceneNode.onAdd(addObj);
 
-        sh.SceneNode.onRemove(function(obj) {
+        function removeObj(obj) {
             _this._objects.splice(_this._objects.indexOf(obj), 1);
 
             if(obj.id) {
                 _this._objectsById[obj.id] = null;
             }
-        });
+
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                removeObj(obj.children[i]);
+            }
+        }
+        sh.SceneNode.onRemove(removeObj);
     },
 
     setCamera: function(camera) {

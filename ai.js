@@ -46,22 +46,74 @@ function Bot() {
 
 function initAI() {
     bot = new Bot();
+
+    var obj = {
+        type: p.inputPacket.typeId,
+        from: 0,
+        dt: 2.0,
+        sequenceId: id++,
+        mouseX: 0,
+        mouseY: 0,
+        mouseDown: 0,
+        left: 1,
+        right: 0,
+        up: 0,
+        down: 0
+    };
+
+    var packet = p.makePacket(obj, p.inputPacket);
+    stream.write(packet);
+
+    obj = {
+        type: p.inputPacket.typeId,
+        from: 0,
+        dt: 3.0,
+        sequenceId: id++,
+        mouseX: 0,
+        mouseY: 0,
+        mouseDown: 0,
+        left: 0,
+        right: 0,
+        up: 1,
+        down: 0
+    };
+
+    packet = p.makePacket(obj, p.inputPacket);
+    stream.write(packet);
 }
 
 var last = Date.now();
+var id = 0;
 function runAI() {
     var now = Date.now();
     var dt = (now - last) / 1000;
 
-    bot.angle += Math.PI / 4 * dt;
-    bot.x = Math.sin(bot.angle) * 100 * Math.sin(bot.angle) + 200;
-    bot.y = Math.cos(bot.angle) * 100 + 200;
+    // bot.angle += Math.PI / 4 * dt;
+    // bot.x = Math.sin(bot.angle) * 100 * Math.sin(bot.angle) + 200;
+    // bot.y = Math.cos(bot.angle) * 100 + 200;
 
-    var obj = { type: p.movePacket.typeId,
-                from: 0,
-                x: bot.x,
-                y: bot.y };
-    var packet = p.makePacket(obj, p.movePacket);
+    // var obj = { type: p.movePacket.typeId,
+    //             from: 0,
+    //             x: bot.x,
+    //             y: bot.y };
+    // var packet = p.makePacket(obj, p.movePacket);
+    // stream.write(packet);
+
+    var obj = {
+        type: p.inputPacket.typeId,
+        from: 0,
+        dt: dt,
+        sequenceId: id++,
+        mouseX: 0,
+        mouseY: 0,
+        mouseDown: 0,
+        left: 1,
+        right: 0,
+        up: 1,
+        down: 0
+    };
+
+    var packet = p.makePacket(obj, p.inputPacket);
     stream.write(packet);
 
     setTimeout(runAI, 16);

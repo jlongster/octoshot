@@ -1,12 +1,14 @@
 (function() {
     function init() {
         server.on('join', function(obj) {
-            var cube = new sh.Cube([0, 50, 0],
-                                   null,
-                                   [10, 10, 10],
-                                   { centered: true });
-            cube.id = 'player' + obj.id;
-            renderer.addObject(cube);
+            var ent = new Entity({ pos: [obj.x, obj.y, obj.z],
+                                   rot: [obj.rotX, obj.rotY, obj.rotZ] });
+            ent.addObject(new sh.Cube(null,
+                                      null,
+                                      [10, 10, 10],
+                                      { centered: true }));
+            ent.id = 'player' + obj.id;
+            renderer.addObject(ent);
         });
 
         server.on('leave', function(obj) {
@@ -22,7 +24,7 @@
                 node = renderer.getObject('player' + obj.from);
             }
             else {
-                node = renderer.getCamera();
+                node = renderer.getCamera().target;
             }
 
             if(node) {

@@ -30,8 +30,17 @@
         ['rotZ', 'float']
     ]);
 
+    var joinPacket = packetType(basePacket, [
+        ['id', 'int32'],
+        ['x', 'float'],
+        ['y', 'float'],
+        ['z', 'float'],
+        ['rotX', 'float'],
+        ['rotY', 'float'],
+        ['rotZ', 'float']        
+    ]);
+
     var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
-    var joinPacket = jsPacketType(basePacket, ['id', 'name']);
     var leavePacket = jsPacketType(basePacket, ['id', 'name']);
     var messagePacket = jsPacketType(basePacket, ['name', 'message']);
     var cmdPacket = jsPacketType(basePacket, ['method', 'args']);

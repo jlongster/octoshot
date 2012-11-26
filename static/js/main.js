@@ -16,7 +16,6 @@ var w = window.innerWidth;
 var h = window.innerHeight;
 var renderer;
 var gl;
-var camera;
 var server;
 var player;
 
@@ -76,11 +75,11 @@ function notify(msg) {
 
 function init() {
     renderer = new sh.Renderer();
-    camera = new sh.Camera([0, 0, 0]);
     server = new ServerConnection();
 
-    player = new Player([0, 0, 0]);
-    renderer.setCamera(player);
+    // Default position should be looking at a positive Z axis
+    player = new Player();;
+    renderer.setCamera(new sh.Camera(player));
     renderer.perspective(45, w / h, 1.0, 5000.0);
 
     var sceneX = 256 * 3;
@@ -119,11 +118,11 @@ function heartbeat() {
 
 $(function() {
     stats = new Stats();
-    // //stats.setMode(1);
-    // stats.domElement.style.position = 'absolute';
-    // stats.domElement.style.right = '0px';
-    // stats.domElement.style.top = '0px';
-    // document.body.appendChild(stats.domElement);
+    //stats.setMode(1);
+    stats.domElement.style.position = 'absolute';
+    stats.domElement.style.right = '0px';
+    stats.domElement.style.top = '0px';
+    document.body.appendChild(stats.domElement);
 
     gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
@@ -137,4 +136,4 @@ $(function() {
         'img/grass.jpg'
     ]);
     resources.onReady(init);
-});
+})

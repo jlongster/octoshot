@@ -5,7 +5,7 @@ var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
 var shade = require('./static/js/node-shade');
-var Player = require('./static/js/player');
+var Entity = require('./static/js/entity');
 
 var app = express();
 var server = require('http').createServer(app);
@@ -44,13 +44,7 @@ function handlePacket(user, data) {
     switch(p.getPacketDesc(packet.type)) {
     case p.inputPacket:
         packet = p.parsePacket(data, p.inputPacket);
-        user.player.handleServerInput(packet);
-
-        // var obj = { type: p.inputPacket.typeId,
-        //             from: user.id,
-        //             x: packet.x,
-        //             y: packet.y};
-        // broadcast(user, p.makePacket(obj, p.inputPacket));
+        user.entity.handleServerInput(packet);
         break;
     case p.messagePacket:
         var message = packet.message;
@@ -176,9 +170,7 @@ bserver.on('connection', function(client) {
         user.stream = stream;
         user.id = userId;
         user.name = 'anon' + user.id;
-        user.player = new Player({
-            serverUser: user
-        });
+        user.entity = new Entity();
 
         console.log(user.name + ' connected [' + CLIENTS.length + ']');
 
@@ -192,7 +184,6 @@ bserver.on('connection', function(client) {
 
         // Tell the user his/her id
         stream.write(p.newUserPacket({
-
             type: p.newUserPacket.typeId,
             from: 0,
             id: user.id,
@@ -222,22 +213,36 @@ bserver.on('connection', function(client) {
 
         CLIENTS.forEach(function(otherUser) {
             if(user != otherUser) {
-                stream.write(p.joinPacket({
+                var ent = otherUser.entity;
+                var obj = {
                     type: p.joinPacket.typeId,
                     from: 0,
                     id: otherUser.id,
-                    name: otherUser.name
-                }));
+                    x: ent.pos[0],
+                    y: ent.pos[1],
+                    z: ent.pos[2],
+                    rotX: ent.rot[0],
+                    rotY: ent.rot[1],
+                    rotZ: ent.rot[2]
+                };
+
+                var packet = p.makePacket(obj, p.joinPacket);
+                stream.write(packet);
             }
         });
 
         // Broadcast to everyone about the new player
-        broadcast(user, p.joinPacket({
+        broadcast(user, p.makePacket({
             type: p.joinPacket.typeId,
             from: 0,
             id: user.id,
-            name: user.name
-        }));
+            x: user.entity.pos[0],
+            y: user.entity.pos[1],
+            z: user.entity.pos[2],
+            rotX: user.entity.rot[0],
+            rotY: user.entity.rot[1],
+            rotZ: user.entity.rot[2]
+        }, p.joinPacket));
 
         broadcast(user, p.messagePacket({
             type: p.messagePacket.typeId,
@@ -273,7 +278,37 @@ bserver.on('connection', function(client) {
 
 setInterval(function() {
     for(var i=0, l=CLIENTS.length; i<l; i++) {
-        CLIENTS[i].player.flushPackets();
+        var user = CLIENTS[i];
+        var buffer = user.entity.flushPackets();
+
+        if(buffer.length) {
+            var state = {
+                type: p.statePacket.typeId,
+                from: 0,
+                sequenceId: buffer[buffer.length - 1].sequenceId,
+                x: 0,
+                y: 0,
+                z: 0,
+                rotX: 0,
+                rotY: 0,
+                rotZ: 0
+            };
+
+            for(var j=0, bl=buffer.length; j<bl; j++) {
+                var obj = buffer[j];
+                state.x += obj.x;
+                state.y += obj.y;
+                state.z += obj.z;
+                state.rotX += obj.rotX;
+                state.rotY += obj.rotY;
+                state.rotZ += obj.rotZ;
+            }
+
+            user.stream.write(p.makePacket(state, p.statePacket));
+
+            state.from = user.id;
+            broadcast(user, p.makePacket(state, p.statePacket));
+        }
     }
 }, 100);
 
