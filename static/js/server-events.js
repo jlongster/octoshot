@@ -42,7 +42,7 @@
                 }
 
                 if(node) {
-                    node.restart();
+                    node.restart(obj.args[2]);
                 }
             }
         });

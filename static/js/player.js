@@ -31,10 +31,10 @@
             this.resetState();
             var state = this.state;
 
-            if(mouse[0] !== 0 && mouse[1] !== 0) {
+            if(mouse[0] !== 0 || mouse[1] !== 0) {
                 moved = true;
-                this.rotateX(mouse[1] * -.01);
-                this.rotateY(mouse[0] * -.01);
+                this.rotateX(mouse[1] * -Math.PI / 6.0 * dt);
+                this.rotateY(mouse[0] * -Math.PI / 6.0 * dt);
             }
 
             state.mouseX = mouse[0];
@@ -138,8 +138,8 @@
             }
         },
 
-        restart: function() {
-            this.parent();
+        restart: function(spawnPoint) {
+            this.parent(spawnPoint);
             vec3.set(this.pos, this.goodPos);
             vec3.set(this.rot, this.goodRot);
         },

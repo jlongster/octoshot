@@ -49,8 +49,8 @@
             var diffRot = vec3.create();
             vec3.set(this.rot, diffRot);
 
-            this.rotateX(state.mouseY * -.01);
-            this.rotateY(state.mouseX * -.01);
+            this.rotateX(state.mouseY * -Math.PI / 6.0 * dt);
+            this.rotateY(state.mouseX * -Math.PI / 6.0 * dt);
 
             if(state.left) {
                 if(state.mouseDown) {
@@ -156,9 +156,29 @@
             vec3.set(this.historyRot, this.rot);
         },
 
-        restart: function() {
-            this.setPos(0, 0, 0);
-            this.setRot(0, Math.PI, 0);
+        restart: function(spawnPoint) {
+            var sceneX = 256 * 4;
+            var sceneY = 256 * 4;
+
+            switch(spawnPoint) {
+            case 0:
+                this.setPos(0, 0, 0);
+                this.setRot(0, Math.PI, 0);
+                break;
+            case 1:
+                this.setPos(sceneX, 0, 0);
+                this.setRot(0, Math.PI, 0);
+                break;
+            case 2:
+                this.setPos(0, 0, sceneY);
+                this.setRot(0, 0, 0);
+                break;
+            case 3:
+                this.setPos(sceneX, 0, sceneY);
+                this.setRot(0, 0, 0);
+                break;
+            }
+            
             this.interp = 1.0;
             this.packetBuffer = [];
             this.startPos = this.targetPos = null;

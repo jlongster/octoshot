@@ -149,13 +149,14 @@ function handlePacket(user, data) {
 }
 
 function handleDeath(killerUser, killedUser) {
-    killedUser.entity.restart();
+    var spawnPoint = Math.floor(Math.random() * 4);
+    killedUser.entity.restart(spawnPoint);
 
     var obj = {
         type: p.cmdPacket.typeId,
         from: 0,
         method: 'die',
-        args: [killerUser.name, killedUser.name]
+        args: [killerUser.name, killedUser.name, spawnPoint]
     };
 
     killedUser.stream.write(p.cmdPacket(obj));
