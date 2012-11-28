@@ -93,7 +93,7 @@ function handlePacket(user, data) {
 
         switch(method) {
         case 'nick':
-            var newName = args[0];
+            var newName = args && args[0];
 
             if(newName) {
                 packet = p.messagePacket({
