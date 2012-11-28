@@ -1,7 +1,7 @@
 
 var shade = require('./static/js/node-shade');
 var p = require('./static/js/packets');
-var collision = require('./collision');
+var collision = require('./static/js/collision');
 
 var World = shade.Obj.extend({
     init: function() {

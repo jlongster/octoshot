@@ -19,6 +19,8 @@
                 this.setScale(10, 10, 10);
             }
 
+            this.setAABB();
+
             this.goodPos = vec3.create(this.pos);
             this.goodRot = vec3.create(this.rot);
 

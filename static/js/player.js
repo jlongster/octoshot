@@ -5,7 +5,7 @@
         init: function(opts) {
             this.parent(opts);
             this.stateBuffer = [];
-            this.isGod = false;
+            this.isGod = true;
         },
 
         update: function(dt) {

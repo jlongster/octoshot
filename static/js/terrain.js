@@ -19,15 +19,12 @@
             var curY = 0;
 
             while(curY < sizeY) {
-                var sy = Math.min(sizeY - curY, 256);
+                var sy = Math.min(sizeY - curY, 255);
                 curX = 0;
-
                 while(curX < sizeX) {
-                    var sx = Math.min(sizeX - curX, 256);
+                    var sx = Math.min(sizeX - curX, 255);
 
-                    this.addObject(new TerrainChunk([curX - Math.floor(curX/256),
-                                                     0.,
-                                                     curY - Math.floor(curY/256)],
+                    this.addObject(new TerrainChunk([curX, 0., curY],
                                                     null,
                                                     null,
                                                     sx,
@@ -47,7 +44,7 @@
     });
 
     Terrain.getHeight = function(x, y, smooth) {
-        var v = noise.noise2D(x / 256, y / 256)*40;
+        var v = noise.noise2D(x / 256, y / 256) * 10;
         if(!smooth) {
             v += noise.noise2D(x/16, y/16) * 2.0;
         }
@@ -63,6 +60,10 @@
             this.parent(pos, rot, scale);
             this.sizeX = sizeX;
             this.sizeY = sizeY;
+            // this.setAABB(null, vec3.createFrom(sizeX / 2.0,
+            //                                    150,
+            //                                    sizeY / 2.0));
+            this.AABB = null;
 
             this.setMaterial(['terrain.vsh', 'terrain.fsh']);
         },
@@ -70,17 +71,18 @@
         create: function() {
             var sizeX = this.sizeX;
             var sizeY = this.sizeY;
+            var rowLength = sizeX + 1;
 
             // Vertices
 
             this.vertexBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.vertexBuffer);
 
-            var vertices = new Float32Array(sizeX*sizeY*3);
+            var vertices = new Float32Array((sizeX + 1) * (sizeY + 1) * 3);
 
-            for(var y=0; y<sizeY; y++) {
-                for(var x=0; x<sizeX; x++) {
-                    var i = (y*sizeX + x) * 3;
+            for(var y=0; y<=sizeY; y++) {
+                for(var x=0; x<=sizeX; x++) {
+                    var i = (y * rowLength + x) * 3;
                     var posX = this.pos[0] + x;
                     var posY = this.pos[2] + y;
 
@@ -97,26 +99,30 @@
             this.normalBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.normalBuffer);
 
-            var normals = new Float32Array(sizeX*sizeY*3);
+            var normals = new Float32Array((sizeX + 1) * (sizeY + 1) * 3);
 
-            for(var y=0; y<sizeY; y++) {
-                for(var x=0; x<sizeX; x++) {
-                    var i = (y*sizeX + x) * 3;
+            for(var y=0; y<=sizeY; y++) {
+                for(var x=0; x<=sizeX; x++) {
+                    var i = (y * rowLength + x) * 3;
 
-                    var top = ((y == sizeY-1 ? y : y + 1) * sizeX + x) * 3 + 1;
-                    var bottom = ((y == 0 ? y : y - 1) * sizeX + x) * 3 + 1;
-                    var left = (y * sizeX + (x == sizeX - 1 ? x : x + 1)) * 3 + 1;
-                    var right = (y * sizeX + (x == 0 ? x : x -1)) * 3 + 1;
+                    // var top = ((y == sizeY-1 ? y : y + 1) * sizeX + x) * 3 + 1;
+                    // var bottom = ((y == 0 ? y : y - 1) * sizeX + x) * 3 + 1;
+                    // var left = (y * sizeX + (x == sizeX - 1 ? x : x + 1)) * 3 + 1;
+                    // var right = (y * sizeX + (x == 0 ? x : x -1)) * 3 + 1;
 
-                    var sx = vertices[left] - vertices[right];
-                    var sy = vertices[top] - vertices[bottom];
+                    // var sx = vertices[left] - vertices[right];
+                    // var sy = vertices[top] - vertices[bottom];
 
-                    var normal = vec3.create([-sx, 2, -sy]);
-                    vec3.normalize(normal);
+                    // var normal = vec3.create([-sx, 2, -sy]);
+                    // vec3.normalize(normal);
 
-                    normals[i] = normal[0];
-                    normals[i+1] = normal[1];
-                    normals[i+2] = normal[2];
+                    // normals[i] = normal[0];
+                    // normals[i+1] = normal[1];
+                    // normals[i+2] = normal[2];
+
+                    normals[i] = 0.0;
+                    normals[i+1] = 1.0;
+                    normals[i+2] = 0.0;
                 }
             }
 
@@ -127,24 +133,24 @@
             this.indexBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
 
-            var indices = new Uint16Array((sizeX - 1) * (sizeY - 1) * 6);
+            var indices = new Uint16Array(sizeX * sizeY * 6);
 
             var m = 0;
-            for(var y=0; y<sizeY - 1; y++) {
-                for(var x=0; x<sizeX - 1; x++) {
-                    var idx = (y * sizeX + x);
-                    var i = (y * (sizeX-1) + x) * 6;
+            for(var y=0; y<sizeY; y++) {
+                for(var x=0; x<sizeX; x++) {
+                    var idx = y * rowLength + x;
+                    var i = (y * (rowLength - 1) + x) * 6;
 
                     indices[i] = idx;
-                    indices[i+1] = idx + sizeX;
+                    indices[i+1] = idx + rowLength;
                     indices[i+2] = idx + 1;
 
-                    indices[i+3] = idx + sizeX;
-                    indices[i+4] = idx + sizeX + 1;
+                    indices[i+3] = idx + rowLength;
+                    indices[i+4] = idx + rowLength + 1;
                     indices[i+5] = idx + 1;
 
-                    if(idx + sizeX + 1 > m) {
-                        m = idx + sizeX + 1;
+                    if(idx + rowLength + 1 > m) {
+                        m = idx + rowLength + 1;
                     }
                 }
             }
@@ -164,12 +170,11 @@
             this.texBuffer = gl.createBuffer();
             gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
 
-            var coords = new Float32Array(sizeX*sizeY*2);
+            var coords = new Float32Array((sizeX + 1) * (sizeY + 1) * 2);
 
-            for(var y=0; y<sizeY; y++) {
-                for(var x=0; x<sizeX; x++) {
-
-                    var i = (y*sizeX + x) * 2;
+            for(var y=0; y<=sizeY; y++) {
+                for(var x=0; x<=sizeX; x++) {
+                    var i = (y * rowLength + x) * 2;
                     coords[i] = x/sizeX * 2;
                     coords[i+1] = y/sizeY * 2;
                 }
@@ -208,7 +213,7 @@
             }
 
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.indexBuffer);
-            gl.drawElements(gl.TRIANGLES, (this.sizeX-1)*(this.sizeY-1)*6, gl.UNSIGNED_SHORT, 0);
+            gl.drawElements(gl.TRIANGLES, this.sizeX * this.sizeY * 6, gl.UNSIGNED_SHORT, 0);
         }
     });
 

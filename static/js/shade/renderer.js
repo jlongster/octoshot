@@ -1,10 +1,12 @@
 
 sh.Renderer = sh.Obj.extend({
-    init: function(w, h) {
+    init: function(w, h, sceneWidth, sceneDepth) {
         this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
         this.width = w;
         this.height = h;
+        this.sceneWidth = sceneWidth;
+        this.sceneDepth = sceneDepth;
 
         this._objects = [];
         this._objectsById = {};
@@ -14,6 +16,14 @@ sh.Renderer = sh.Obj.extend({
 
         this._normalMatrix = mat3.create();
         this._worldTransform = mat4.create();
+
+        var sw = sceneWidth;
+        var sd = sceneDepth;
+        this._quadtree = new sh.Quadtree(
+            new sh.AABB(vec3.createFrom(sw / 2.0, 50, sw / 2.0),
+                        vec3.createFrom(sw / 2.0, 50, sd / 2.0)),
+            4
+        );
 
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
@@ -31,6 +41,8 @@ sh.Renderer = sh.Obj.extend({
                 for(var i=0, l=obj.children.length; i<l; i++) {
                     addObj(obj.children[i]);
                 }
+
+                _this._quadtree.add(obj);
             }
         }
         sh.SceneNode.onAdd(addObj);
@@ -165,6 +177,27 @@ sh.Renderer = sh.Obj.extend({
                 obj.render();
             }
         }
+
+        // Render AABBs (DEBUG)
+
+        var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
+        prog.use();
+        if(prog.worldTransformLoc) {
+            gl.uniformMatrix4fv(prog.worldTransformLoc,
+                                false,
+                                this._worldTransform);
+        }
+
+
+        for(var i=0, l=objs.length; i<l; i++) {
+            if(objs[i].AABB) {
+                objs[i].AABB.render(prog);
+            }
+        }
+
+        // Render Quadtree (DEBUG)
+
+        this._quadtree.render(prog);
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {

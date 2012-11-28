@@ -12,7 +12,7 @@ void main() {
     fogFactor = clamp(fogFactor, 0.0, 1.0);
 
     vec3 nNormal = normalize(normal);
-    float diffuse = dot(nNormal, vec3(1.0, 1.0, 0.0));
+    float diffuse = dot(nNormal, vec3(1.0, 1.0, -1.0));
 
     gl_FragColor = (vec4(.2, .2, .2, 1.0) +
                     mix(vec4(0.0, 0.0, 0.0, 1.0),

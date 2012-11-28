@@ -74,19 +74,26 @@ function notify(msg) {
 }
 
 function init() {
-    renderer = new sh.Renderer(w, h);
+    renderer = new sh.Renderer(w, h, 255 * 4, 255 * 4);
     server = new ServerConnection();
 
     player = new Player();
     renderer.setCamera(new sh.Camera(player));
     renderer.perspective(45, w / h, 1.0, 5000.0);
 
-    var sceneX = 256 * 4;
-    var sceneY = 256 * 4;
-    var terrain = new Terrain(null, null, null, sceneX, sceneY);
+    var terrain = new Terrain(null, null, null,
+                              renderer.sceneWidth,
+                              renderer.sceneDepth);
     terrain.create();
     renderer.addObject(terrain);
 
+    for(var i=0; i<50; i++) {
+        var cube = new sh.Cube([50, 0, i*25],
+                               [0, 0, 0],
+                               [100, 100, 10]);
+        renderer.addObject(cube);
+    }
+    
     document.getElementById('loading').style.display = 'none';
 
     serverEvents.init();
@@ -103,6 +110,7 @@ function heartbeat() {
     var dt = Math.min((now - last) / 1000., .1);
 
     renderer.update(dt);
+    //checkCollisions();
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
@@ -131,6 +139,8 @@ $(function() {
     resources.load([
         'shaders/default.fsh',
         'shaders/default.vsh',
+        'shaders/debug.fsh',
+        'shaders/debug.vsh',
         'shaders/terrain.fsh',
         'shaders/terrain.vsh',
         'img/grass.jpg'

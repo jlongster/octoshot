@@ -324,6 +324,7 @@ var SceneNode = sh.Obj.extend({
         this.transform = mat4.create();
         this.worldTransform = mat4.create();
         this._program = null;
+        this.setAABB();
 
         this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;
@@ -370,6 +371,20 @@ var SceneNode = sh.Obj.extend({
         }
 
         SceneNode.fireRemove(obj);
+    },
+
+    setAABB: function(pos, extent) {
+        if(!extent) {
+            extent = vec3.create();
+            vec3.scale(this.scale, .5, extent);
+        }
+
+        if(!pos) {
+            pos = vec3.createFrom(0, 0, 0);
+        }
+
+
+        this.AABB = { pos: pos, extent: extent };
     },
 
     setPos: function(x, y, z) {
@@ -513,6 +528,13 @@ var SceneNode = sh.Obj.extend({
         this.translate(back[0], back[1], back[2]);
     },
 
+    traverse: function(func) {
+        for(var i=0, l=this.children.length; i<l; i++) {
+            func(this.children[i]);
+            this.children[i].traverse(func);
+        }
+    },
+
     needsWorldUpdate: function() {
         return this._dirty || this._dirtyWorld;
     },
@@ -523,6 +545,7 @@ var SceneNode = sh.Obj.extend({
         if(this._dirty) {
             if(this.useQuat) {
                 mat4.fromRotationTranslation(this.quat, this.pos, this.transform);
+                mat4.scale(this.transform, this.scale);
             }
             else {
                 mat4.identity(this.transform);
@@ -882,9 +905,11 @@ sh.Camera = sh.SceneNode.extend({
 });
 
 sh.Renderer = sh.Obj.extend({
-    init: function() {
+    init: function(w, h) {
         this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
+        this.width = w;
+        this.height = h;
 
         this._objects = [];
         this._objectsById = {};
@@ -1045,6 +1070,36 @@ sh.Renderer = sh.Obj.extend({
                 obj.render();
             }
         }
+
+        // Render AABBs (DEBUG)
+
+        // var prog = this.loadProgram({ shaders: ['default.vsh', 'default.fsh'] });
+        // prog.use();
+        // if(prog.worldTransformLoc) {
+        //     gl.uniformMatrix4fv(prog.worldTransformLoc,
+        //                         false,
+        //                         this._worldTransform);
+        // }
+
+        // var mat = mat4.create();
+        // var pos = vec3.create();
+        // var scale = vec3.create();
+
+        // for(var i=0, l=objs.length; i<l; i++) {
+        //     var obj = objs[i];
+        //     vec3.add(obj.pos, obj.AABB.pos, pos);
+        //     vec3.add(pos, obj.AABB.extent);
+        //     vec3.subtract(pos, obj.AABB.extent);
+
+        //     vec3.scale(obj.AABB.extent, 2.0, scale);
+
+        //     mat4.identity(mat);
+        //     mat4.translate(mat, pos);
+        //     mat4.scale(mat, scale);
+
+        //     gl.uniformMatrix4fv(prog.modelTransformLoc, false, mat);
+        //     sh.Cube.mesh.render(prog.program, true);
+        // }
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {

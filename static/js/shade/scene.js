@@ -24,6 +24,7 @@ var SceneNode = sh.Obj.extend({
         this.transform = mat4.create();
         this.worldTransform = mat4.create();
         this._program = null;
+        this.setAABB();
 
         this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;
@@ -72,11 +73,27 @@ var SceneNode = sh.Obj.extend({
         SceneNode.fireRemove(obj);
     },
 
+    setAABB: function(pos, extent) {
+        if(!extent) {
+            extent = vec3.create();
+            vec3.scale(this.scale, .5, extent);
+        }
+
+        if(!pos) {
+            // Default is in the middle of the object
+            pos = vec3.create();
+            vec3.set(extent, pos);
+        }
+
+        this.AABB = new sh.AABB(pos, extent, this);
+    },
+
     setPos: function(x, y, z) {
         this.pos[0] = x;
         this.pos[1] = y;
         this.pos[2] = z;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     setRot: function(xOrQuat, y, z) {
@@ -103,21 +120,25 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] += y;
         this.pos[2] += z;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateX: function(v) {
         this.pos[0] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateY: function(v) {
         this.pos[1] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateZ: function(v) {
         this.pos[2] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     rotate: function(x, y, z) {
