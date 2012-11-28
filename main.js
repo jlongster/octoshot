@@ -4,7 +4,7 @@ var remix = require('webremix');
 var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
-var shade = require('./static/js/node-shade');
+var World = require('./world');
 var Entity = require('./static/js/entity');
 
 var app = express();
@@ -17,6 +17,7 @@ app.configure(function() {
 // Sockets
 
 var CLIENTS = [];
+var world = new World();
 
 function broadcast(user, packet) {
     for(var i=0, l=CLIENTS.length; i<l; i++) {
@@ -29,6 +30,16 @@ function broadcast(user, packet) {
             }
         }
     }
+}
+
+function lookupUser(entity) {
+    for(var i=0, l=CLIENTS.length; i<l; i++) {
+        if(CLIENTS[i].entity === entity) {
+            return CLIENTS[i];
+        }
+    }
+
+    return null;
 }
 
 function handlePacket(user, data) {
@@ -45,6 +56,21 @@ function handlePacket(user, data) {
     case p.inputPacket:
         packet = p.parsePacket(data, p.inputPacket);
         user.entity.handleServerInput(packet);
+        break;
+    case p.clickPacket:
+        var entStates = {};
+        for(var i=0; i<packet.entIds.length; i++) {
+            entStates[packet.entIds[i]] = { seq: packet.seqIds[i],
+                                            interp: packet.entInterps[i] };
+        }
+
+        var ent = world.getHit(user,
+                               entStates,
+                               [packet.x, packet.y, packet.z],
+                               [packet.x2, packet.y2, packet.z2]);
+        if(ent) {
+            handleDeath(user, lookupUser(ent));
+        }
         break;
     case p.messagePacket:
         var message = packet.message;
@@ -122,6 +148,22 @@ function handlePacket(user, data) {
     }
 }
 
+function handleDeath(killerUser, killedUser) {
+    killedUser.entity.restart();
+
+    var obj = {
+        type: p.cmdPacket.typeId,
+        from: 0,
+        method: 'die',
+        args: [killerUser.name, killedUser.name]
+    };
+
+    killedUser.stream.write(p.cmdPacket(obj));
+
+    obj.from = killedUser.id;
+    broadcast(killedUser, p.cmdPacket(obj));
+}
+
 function newUserid() {
     var id;
 
@@ -171,6 +213,8 @@ bserver.on('connection', function(client) {
         user.id = userId;
         user.name = 'anon' + user.id;
         user.entity = new Entity();
+        user.entity.id = user.name;
+        world.addEntity(user.entity);
 
         console.log(user.name + ' connected [' + CLIENTS.length + ']');
 
@@ -218,12 +262,12 @@ bserver.on('connection', function(client) {
                     type: p.joinPacket.typeId,
                     from: 0,
                     id: otherUser.id,
-                    x: ent.pos[0],
-                    y: ent.pos[1],
-                    z: ent.pos[2],
-                    rotX: ent.rot[0],
-                    rotY: ent.rot[1],
-                    rotZ: ent.rot[2]
+                    x: ent.goodPos[0],
+                    y: ent.goodPos[1],
+                    z: ent.goodPos[2],
+                    rotX: ent.goodRot[0],
+                    rotY: ent.goodRot[1],
+                    rotZ: ent.goodRot[2]
                 };
 
                 var packet = p.makePacket(obj, p.joinPacket);
@@ -255,6 +299,7 @@ bserver.on('connection', function(client) {
     client.on('close', function() {
         // Remove itself from the clients array
         CLIENTS.splice(CLIENTS.indexOf(user), 1);
+        world.removeEntity(user.entity);
         console.log(user.name + ' disconnected [' + CLIENTS.length + ']');
 
         // Broadcast to everyone that he/she left
@@ -276,43 +321,8 @@ bserver.on('connection', function(client) {
     });
 });
 
-setInterval(function() {
-    for(var i=0, l=CLIENTS.length; i<l; i++) {
-        var user = CLIENTS[i];
-        var buffer = user.entity.flushPackets();
-
-        if(buffer.length) {
-            var state = {
-                type: p.statePacket.typeId,
-                from: 0,
-                sequenceId: buffer[buffer.length - 1].sequenceId,
-                x: 0,
-                y: 0,
-                z: 0,
-                rotX: 0,
-                rotY: 0,
-                rotZ: 0
-            };
-
-            for(var j=0, bl=buffer.length; j<bl; j++) {
-                var obj = buffer[j];
-                state.x += obj.x;
-                state.y += obj.y;
-                state.z += obj.z;
-                state.rotX += obj.rotX;
-                state.rotY += obj.rotY;
-                state.rotZ += obj.rotZ;
-            }
-
-            user.stream.write(p.makePacket(state, p.statePacket));
-
-            state.from = user.id;
-            broadcast(user, p.makePacket(state, p.statePacket));
-        }
-    }
-}, 100);
-
 // Fire up the server
 
 console.log('Started server on ' + settings.port + '...');
 server.listen(settings.port);
+world.start(lookupUser, broadcast);

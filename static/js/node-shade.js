@@ -420,12 +420,12 @@ var SceneNode = sh.Obj.extend({
         this._dirty = true;
     },
 
-    // rotate: function(angle, axis) {
-
-    //     var rot = quat4.fromAngleAxis(angle, axis);
-    //     quat4.multiply(this.rot, rot);
-    //     this._dirty = true;
-    // },
+    rotate: function(x, y, z) {
+        this.rot[0] += x;
+        this.rot[1] += y;
+        this.rot[2] += z;
+        this._dirty = true;
+    },
 
     rotateX: function(v) {
         if(this.useQuat) {
@@ -498,6 +498,7 @@ var SceneNode = sh.Obj.extend({
     moveForward: function(v) {
         var forward = vec3.create([0, 0, -1]);
         var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.rotateX(quat, this.rot[0]);
         quat4.multiplyVec3(quat, forward);
         vec3.scale(forward, v);
         this.translate(forward[0], forward[1], forward[2]);
@@ -506,6 +507,7 @@ var SceneNode = sh.Obj.extend({
     moveBack: function(v) {
         var back = vec3.create([0, 0, 1]);
         var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.rotateX(quat, this.rot[0]);
         quat4.multiplyVec3(quat, back);
         vec3.scale(back, v);
         this.translate(back[0], back[1], back[2]);
@@ -860,9 +862,6 @@ sh.Cube = sh.SceneNode.extend({
 sh.Camera = sh.SceneNode.extend({
     init: function(target) {
         this.parent();
-
-        // Default position should be looking at a positive Z axis
-        target.rotateY(Math.PI);
         this.target = target;
         this.inverseTransform = mat4.create();
     },
@@ -900,21 +899,34 @@ sh.Renderer = sh.Obj.extend({
         gl.enable(gl.CULL_FACE);
 
         var _this = this;
-        sh.SceneNode.onAdd(function(obj) {
-            _this._objects.push(obj);
 
-            if(obj.id) {
-                _this._objectsById[obj.id] = obj;
+        function addObj(obj) {
+            if(_this._objects.indexOf(obj) === -1) {
+                _this._objects.push(obj);
+
+                if(obj.id) {
+                    _this._objectsById[obj.id] = obj;
+                }
+
+                for(var i=0, l=obj.children.length; i<l; i++) {
+                    addObj(obj.children[i]);
+                }
             }
-        });
+        }
+        sh.SceneNode.onAdd(addObj);
 
-        sh.SceneNode.onRemove(function(obj) {
+        function removeObj(obj) {
             _this._objects.splice(_this._objects.indexOf(obj), 1);
 
             if(obj.id) {
                 _this._objectsById[obj.id] = null;
             }
-        });
+
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                removeObj(obj.children[i]);
+            }
+        }
+        sh.SceneNode.onRemove(removeObj);
     },
 
     setCamera: function(camera) {

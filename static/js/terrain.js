@@ -1,6 +1,12 @@
 
 (function(SimplexNoise, SceneNode) {
-    var noise = new SimplexNoise(Math.random);
+    var seed = 124;
+    function random() {
+        seed = ((seed * 1103515245) + 12345) & 0x7fffffff;
+        return seed / 0x7FFFFFFF;
+    };
+
+    var noise = new SimplexNoise(random);
 
     var Terrain = SceneNode.extend({
         init: function(pos, rot, scale, sizeX, sizeY) {

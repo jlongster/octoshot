@@ -49,8 +49,12 @@ var ServerConnection = sh.Obj.extend({
         case packets.messagePacket:
             this.fire('message', obj);
             break;
+        case packets.cmdPacket:
+            this.fire('cmd', obj);
+            break;
         case packets.cmdResPacket:
             this.fire('cmdRes', obj);
+            break;
         }
     },
 
@@ -77,6 +81,22 @@ var ServerConnection = sh.Obj.extend({
             var p = packets.makePacket(input, packets.inputPacket);
             this.stream.write(p);
         }
+    },
+
+    sendClick: function(entIds, entInterps, seqIds, v1, v2) {
+        this.stream.write(packets.clickPacket({
+            type: packets.clickPacket.typeId,
+            from: this.userId,
+            entIds: entIds,
+            entInterps: entInterps,
+            seqIds: seqIds,
+            x: v1[0],
+            y: v1[1],
+            z: v1[2],
+            x2: v2[0],
+            y2: v2[1],
+            z2: v2[2]
+        }));
     },
 
     sendMessage: function(msg) {

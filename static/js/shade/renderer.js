@@ -1,8 +1,10 @@
 
 sh.Renderer = sh.Obj.extend({
-    init: function() {
+    init: function(w, h) {
         this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
+        this.width = w;
+        this.height = h;
 
         this._objects = [];
         this._objectsById = {};

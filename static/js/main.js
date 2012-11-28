@@ -74,16 +74,15 @@ function notify(msg) {
 }
 
 function init() {
-    renderer = new sh.Renderer();
+    renderer = new sh.Renderer(w, h);
     server = new ServerConnection();
 
-    // Default position should be looking at a positive Z axis
-    player = new Player();;
+    player = new Player();
     renderer.setCamera(new sh.Camera(player));
     renderer.perspective(45, w / h, 1.0, 5000.0);
 
-    var sceneX = 256 * 3;
-    var sceneY = 256 * 3;
+    var sceneX = 256 * 4;
+    var sceneY = 256 * 4;
     var terrain = new Terrain(null, null, null, sceneX, sceneY);
     terrain.create();
     renderer.addObject(terrain);
@@ -101,7 +100,7 @@ function init() {
 var last = Date.now();
 function heartbeat() {
     var now = Date.now();
-    var dt = Math.min((now - last) / 1000., 1.0);
+    var dt = Math.min((now - last) / 1000., .1);
 
     renderer.update(dt);
 
@@ -113,6 +112,7 @@ function heartbeat() {
     last = now;
     requestAnimFrame(heartbeat);
 
+    input.reset();
     stats.update();
 }
 

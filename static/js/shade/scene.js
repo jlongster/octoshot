@@ -198,6 +198,7 @@ var SceneNode = sh.Obj.extend({
     moveForward: function(v) {
         var forward = vec3.create([0, 0, -1]);
         var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.rotateX(quat, this.rot[0]);
         quat4.multiplyVec3(quat, forward);
         vec3.scale(forward, v);
         this.translate(forward[0], forward[1], forward[2]);
@@ -206,9 +207,17 @@ var SceneNode = sh.Obj.extend({
     moveBack: function(v) {
         var back = vec3.create([0, 0, 1]);
         var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
+        quat4.rotateX(quat, this.rot[0]);
         quat4.multiplyVec3(quat, back);
         vec3.scale(back, v);
         this.translate(back[0], back[1], back[2]);
+    },
+
+    traverse: function(func) {
+        for(var i=0, l=this.children.length; i<l; i++) {
+            func(this.children[i]);
+            this.children[i].traverse(func);
+        }
     },
 
     needsWorldUpdate: function() {
@@ -221,6 +230,7 @@ var SceneNode = sh.Obj.extend({
         if(this._dirty) {
             if(this.useQuat) {
                 mat4.fromRotationTranslation(this.quat, this.pos, this.transform);
+                mat4.scale(this.transform, this.scale);
             }
             else {
                 mat4.identity(this.transform);

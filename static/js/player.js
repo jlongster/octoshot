@@ -4,15 +4,16 @@
     var Player = Entity.extend({
         init: function(opts) {
             this.parent(opts);
-
-            this.goodPos = vec3.create();
-            vec3.set(this.pos, this.goodPos);
-            this.goodRot = vec3.create();
-            vec3.set(this.rot, this.goodRot);
+            this.stateBuffer = [];
+            this.isGod = false;
         },
 
         update: function(dt) {
             this.handleClientInput(dt);
+        },
+
+        toggleGod: function() {
+            this.isGod = !this.isGod;
         },
 
         handleClientInput: function(dt) {
@@ -46,7 +47,7 @@
                     this.moveLeft(this.speed * dt);
                 }
                 else {
-                    this.rotateY(.02);
+                    this.rotateY(Math.PI / 2 * dt);
                 }
 
                 state.left = 1;
@@ -58,7 +59,7 @@
                     this.moveRight(this.speed * dt);
                 }
                 else {
-                    this.rotateY(-.02);
+                    this.rotateY(-Math.PI / 2 * dt);
                 }
 
                 state.right = 1;
@@ -76,7 +77,9 @@
                 state.down = 1;
             }
 
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            if(!this.isGod) {
+                this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            }
 
             if(moved) {
                 vec3.subtract(this.pos, diffPos, diffPos);
@@ -87,6 +90,58 @@
                 state.sequenceId = this.sequenceId++;
                 server.sendInput(state);
             }
+
+            if(input.isMouseClicked()) {
+                var coord = input.getCurMouse();
+
+                // Evidently, we need to flip the y value
+                var screenPos = vec3.createFrom(coord[0],
+                                                renderer.height - coord[1],
+                                                0);
+                var v1 = vec3.create();
+                var v2 = vec3.create();
+
+                vec3.unproject(screenPos,
+                               renderer.camera.inverseTransform,
+                               renderer.persMatrix,
+                               vec4.createFrom(0, 0,
+                                               renderer.width, renderer.height),
+                               v1);
+
+                screenPos[2] = 1.0;
+
+                vec3.unproject(screenPos,
+                               renderer.camera.inverseTransform,
+                               renderer.persMatrix,
+                               vec4.createFrom(0, 0,
+                                               renderer.width, renderer.height),
+                               v2);
+
+                // DEBUG
+                // var line = new sh.Line({ v1: v1,
+                //                          v2: v2 });
+                // renderer.addObject(line);
+
+                var entIds = [];
+                var entInterps = [];
+                var seqIds = [];
+
+                renderer.root.traverse(function(obj) {
+                    if(obj instanceof Entity && obj.id) {
+                        entIds.push(obj.id);
+                        entInterps.push(obj.interp);
+                        seqIds.push(obj.sequenceId);
+                    }
+                });
+
+                server.sendClick(entIds, entInterps, seqIds, v1, v2);
+            }
+        },
+
+        restart: function() {
+            this.parent();
+            vec3.set(this.pos, this.goodPos);
+            vec3.set(this.rot, this.goodRot);
         },
 
         saveState: function(pos, rot, sequenceId) {
@@ -145,14 +200,16 @@
             vec3.add(goodPos, [state.x, state.y, state.z]);
             vec3.add(goodRot, [state.rotX, state.rotY, state.rotZ]);
 
-            vec3.set(goodPos, pos);
-            vec3.set(goodRot, rot);
+            if(!this.isGod) {
+                vec3.set(goodPos, pos);
+                vec3.set(goodRot, rot);
 
-            // Apply the rest to get the final state
-            for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
-                var pState = buffer[i];
-                vec3.add(pos, [pState.x, pState.y, pState.z]);
-                vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+                // Apply the rest to get the final state
+                for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
+                    var pState = buffer[i];
+                    vec3.add(pos, [pState.x, pState.y, pState.z]);
+                    vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+                }
             }
 
             buffer = buffer.slice(bufferIdx + 1);

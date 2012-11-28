@@ -30,6 +30,14 @@
         ['rotZ', 'float']
     ]);
 
+    var clickPacket = jsPacketType(basePacket, [
+        'entIds',
+        'entInterps',
+        'seqIds',
+        'x', 'y', 'z',
+        'x2', 'y2', 'z2'
+    ]);
+
     var joinPacket = packetType(basePacket, [
         ['id', 'int32'],
         ['x', 'float'],
@@ -221,6 +229,7 @@
         joinPacket: joinPacket,
         leavePacket: leavePacket,
         inputPacket: inputPacket,
+        clickPacket: clickPacket,
         statePacket: statePacket,
         messagePacket: messagePacket,
         cmdPacket: cmdPacket,

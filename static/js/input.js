@@ -33,6 +33,7 @@
     });
 
     var down = false;
+    var clicked = false;
     var accessed = false;
     document.addEventListener('mousedown', function(e) {
         down = true;
@@ -55,7 +56,16 @@
 
     document.addEventListener('mouseup', function(e) {
         down = false;
+
+        if(curMouse[0] - lastMouse[0] === 0 &&
+           curMouse[1] - lastMouse[1] === 0) {
+            clicked = true;
+        }
     });
+
+    function reset() {
+        clicked = false;
+    }
 
     function on(key, func) {
         key = key.toUpperCase();
@@ -108,6 +118,14 @@
         return down;
     }
 
+    function isMouseClicked() {
+        return clicked;
+    }
+
+    function getCurMouse() {
+        return curMouse;
+    }
+
     function getMouseMoved() {
         if(curMouse && !accessed) {
             accessed = true;
@@ -121,7 +139,10 @@
     window.input = {
         isDown: isDown,
         isMouseDown: isMouseDown,
+        isMouseClicked: isMouseClicked,
         getMouseMoved: getMouseMoved,
-        on: on
+        getCurMouse: getCurMouse,
+        on: on,
+        reset: reset
     };
 })();
