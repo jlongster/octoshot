@@ -1,23 +1,14 @@
 
 var shade = require('./static/js/node-shade');
 var p = require('./static/js/packets');
-var collision = require('./static/js/collision');
+var collision = require('./static/js/node-shade').Collision;
+var Scene = require('./static/js/node-shade').Scene;
 
-var World = shade.Obj.extend({
-    init: function() {
+module.exports = Scene.extend({
+    init: function(sceneWidth, sceneDepth) {
+        this.parent(sceneWidth, sceneDepth);
         this.entities = [];
         this.packetBuffer = [];
-    },
-
-    addEntity: function(ent) {
-        this.entities.push(ent);
-    },
-
-    removeEntity: function(ent) {
-        var idx = this.entities.indexOf(ent);
-        if(idx !== -1) {
-            this.entities.splice(idx, 1);
-        }
     },
 
     getHit: function(user, entStates, start, end) {
@@ -37,6 +28,13 @@ var World = shade.Obj.extend({
             }
 
         }
+    },
+
+    update: function(entity, packet) {
+        entity.snapshot();
+        entity.handleServerInput(packet);
+        this.checkObjCollisions(entity);
+        entity.sendDiff(packet.sequenceId);
     },
 
     start: function(lookupUser, broadcast) {
@@ -81,6 +79,3 @@ var World = shade.Obj.extend({
         }, 100);
     }
 });
-
-module.exports = World;
-

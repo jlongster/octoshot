@@ -5,7 +5,7 @@ varying vec3 normal;
 uniform sampler2D sampler;
 
 void main() {
-    float density = 0.002;
+    float density = 0.02;
     float z = gl_FragCoord.z / gl_FragCoord.w;
     float LOG2 = 1.442695;
     float fogFactor = exp2(-density*density*z*z*LOG2);

@@ -6,17 +6,8 @@ sh.Camera = sh.SceneNode.extend({
         this.inverseTransform = mat4.create();
     },
 
-    update: function(dt) {
-        this.target.update(dt);
-    },
-
     updateMatrices: function() {
-        var target = this.target;
-        var dirty = target._dirty;
-        target.updateMatrices();
-
-        if(dirty) {
-            mat4.inverse(target._realTransform, this.inverseTransform);
-        }
+        this.target.updateMatrices();
+        mat4.inverse(this.target._realTransform, this.inverseTransform);
     }
 });

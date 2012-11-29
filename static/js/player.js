@@ -4,12 +4,21 @@
     var Player = Entity.extend({
         init: function(opts) {
             this.parent(opts);
+
+            var halfScale = vec3.create();
+            vec3.scale(this.scale, .5, halfScale);
+            this.setScale(1, 1, 1);
+            this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
+
             this.stateBuffer = [];
-            this.isGod = true;
+            this.isGod = false;
         },
 
         update: function(dt) {
             this.handleClientInput(dt);
+        },
+
+        render: function() {
         },
 
         toggleGod: function() {
@@ -17,6 +26,8 @@
         },
 
         handleClientInput: function(dt) {
+            this.snapshot();
+
             var moved = false;
             var mouse = input.getMouseMoved();
             var diffPos = vec3.create();
@@ -102,7 +113,7 @@
                 var v2 = vec3.create();
 
                 vec3.unproject(screenPos,
-                               renderer.camera.inverseTransform,
+                               scene.camera.inverseTransform,
                                renderer.persMatrix,
                                vec4.createFrom(0, 0,
                                                renderer.width, renderer.height),
@@ -111,7 +122,7 @@
                 screenPos[2] = 1.0;
 
                 vec3.unproject(screenPos,
-                               renderer.camera.inverseTransform,
+                               scene.camera.inverseTransform,
                                renderer.persMatrix,
                                vec4.createFrom(0, 0,
                                                renderer.width, renderer.height),
@@ -126,6 +137,7 @@
                 var entInterps = [];
                 var seqIds = [];
 
+                // TODO: use iterate, not traverse
                 renderer.root.traverse(function(obj) {
                     if(obj instanceof Entity && obj.id) {
                         entIds.push(obj.id);
@@ -201,15 +213,15 @@
             vec3.add(goodRot, [state.rotX, state.rotY, state.rotZ]);
 
             if(!this.isGod) {
-                vec3.set(goodPos, pos);
-                vec3.set(goodRot, rot);
+                // vec3.set(goodPos, pos);
+                // vec3.set(goodRot, rot);
 
-                // Apply the rest to get the final state
-                for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
-                    var pState = buffer[i];
-                    vec3.add(pos, [pState.x, pState.y, pState.z]);
-                    vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
-                }
+                // // Apply the rest to get the final state
+                // for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
+                //     var pState = buffer[i];
+                //     vec3.add(pos, [pState.x, pState.y, pState.z]);
+                //     vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+                // }
             }
 
             buffer = buffer.slice(bufferIdx + 1);

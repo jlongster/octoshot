@@ -1,7 +1,6 @@
 
-(function(vec3, mat4) {
-
-    function boxLineHit(ent, lineStart, lineEnd) {
+sh.Collision = {
+    boxLineHit: function(ent, lineStart, lineEnd) {
         var matInverse = mat4.create();
         mat4.identity(matInverse);
         mat4.translate(matInverse, ent.pos);
@@ -62,9 +61,9 @@
         // WHY WON'T THIS WORK?? T_T
         // EDIT: IT FINALLY WORKSSSSSSS!
         return true;
-    }
+    },
 
-    function boxContainsPoint(aabb, point) {
+    boxContainsPoint: function(aabb, point) {
         var worldPos = aabb.getWorldPos();
 
         var upper = vec3.create();
@@ -83,35 +82,57 @@
         }
 
         return false;
-    }
+    },
 
-    function boxOverlaps(aabb1, aabb2) {
+    boxOverlaps: function(aabb1, aabb2) {
         var worldPos1 = aabb1.getWorldPos();
         var worldPos2 = aabb2.getWorldPos();
 
         var ab = vec3.create();
         vec3.subtract(worldPos2, worldPos1, ab);
 
-        return (Math.abs(ab[0]) <= (aabb1.extent[0] + aabb2.extent[0]) &&
-                Math.abs(ab[1]) <= (aabb1.extent[1] + aabb2.extent[1]) &&
-                Math.abs(ab[2]) <= (aabb1.extent[2] + aabb2.extent[2]));
-    }
+        return (Math.abs(ab[0]) < (aabb1.extent[0] + aabb2.extent[0]) &&
+                Math.abs(ab[1]) < (aabb1.extent[1] + aabb2.extent[1]) &&
+                Math.abs(ab[2]) < (aabb1.extent[2] + aabb2.extent[2]));
+    },
 
-    if(typeof module !== 'undefined') {
-        module.exports = {
-            boxLineHit: boxLineHit,
-            boxContainsPoint: boxContainsPoint,
-            boxOverlaps: boxOverlaps
-        };
-    }
-    else {
-        window.boxLineHit = boxLineHit;
-        window.boxContainsPoint = boxContainsPoint;
-        window.boxOverlaps = boxOverlaps;
-    }
+    resolveBoxes: function(aabb1, aabb2) {
+        var worldPos1 = aabb1.getWorldPos();
+        var worldPos2 = aabb2.getWorldPos();
 
+        var ab = vec3.create();
+        vec3.subtract(worldPos2, worldPos1, ab);
 
-}).apply(this, (typeof module !== 'undefined' ?
-                [require('./shade/gl-matrix').vec3,
-                 require('./shade/gl-matrix').mat4] :
-                [vec3, mat4]));
+        var f1 = aabb1.extent[0] + aabb2.extent[0] - Math.abs(ab[0]);
+        var f2 = aabb1.extent[1] + aabb2.extent[1] - Math.abs(ab[1]);
+        var f3 = aabb1.extent[2] + aabb2.extent[2] - Math.abs(ab[2]);
+
+        if(f1 < f2 && f1 < f3) {
+            if(ab[0] > 0) {
+                return [-f1, 0, 0];
+            }
+            else {
+                return [f1, 0, 0];
+            }
+        }
+        else if(f2 < f1 && f2 < f3) {
+            if(ab[1] > 0) {
+                return [0, -f2, 0];
+            }
+            else {
+                return [0, f2, 0];
+            }
+        }
+        else if(f3 < f1 && f3 < f2) {
+            if(ab[2] > 0) {
+                return [0, 0, -f3];
+            }
+            else {
+                return [0, 0, f3];
+            }
+        }
+    },
+
+    STATIC: 1,
+    ACTIVE: 2
+};

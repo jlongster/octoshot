@@ -10,8 +10,40 @@ sh.Quadtree = sh.Obj.extend({
 
     add: function(entity) {
         if(entity.AABB) {
-            if(boxOverlaps(this.AABB, entity.AABB)) {
+            if(sh.Collision.boxOverlaps(this.AABB, entity.AABB)) {
                 this._add(entity);
+            }
+        }
+    },
+
+    remove: function(entity) {
+        if(this.children) {
+            var children = this.children;
+            for(var i=0, l=children.length; i<l; i++) {
+                children[i].remove(entity);
+            }
+        }
+        else {
+            var idx = this.objects.indexOf(entity);
+            if(idx !== -1) {
+                this.objects.splice(idx, 1);
+            }
+        }
+    },
+
+    findObjects: function(aabb, func) {
+        if(sh.Collision.boxOverlaps(this.AABB, aabb)) {
+            if(this.children) {
+                var children = this.children;
+                for(var i=0, l=children.length; i<l; i++) {
+                    children[i].findObjects(aabb, func);
+                }
+            }
+            else {
+                var obj = this.objects;
+                for(var i=0, l=obj.length; i<l; i++) {
+                    func(obj[i]);
+                }
             }
         }
     },

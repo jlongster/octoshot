@@ -58,6 +58,5 @@ sh.AABB = sh.Obj.extend({
 
         gl.uniformMatrix4fv(program.modelTransformLoc, false, mat);
         sh.Cube.mesh.render(program.program, true);
-
     }
 });

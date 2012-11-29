@@ -161,7 +161,7 @@ sh.Cube = sh.SceneNode.extend({
             mat4.translate(this.preMatrix, [-.5, -.5, -.5]);
         }
 
-        if(!sh.Cube.mesh) {
+        if(typeof window !== 'undefined' && !sh.Cube.mesh) {
             sh.Cube.mesh = new sh.CubeMesh();
             sh.Cube.mesh.create();
         }

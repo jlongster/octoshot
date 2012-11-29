@@ -298,6 +298,415 @@ sh.Resources = sh.Obj.extend({
             this.readyCallbacks.push(func);
         }
     }
+});
+sh.Collision = {
+    boxLineHit: function(ent, lineStart, lineEnd) {
+        var matInverse = mat4.create();
+        mat4.identity(matInverse);
+        mat4.translate(matInverse, ent.pos);
+        mat4.rotateZ(matInverse, ent.rot[2]);
+        mat4.rotateY(matInverse, ent.rot[1]);
+        mat4.rotateX(matInverse, ent.rot[0]);
+        mat4.inverse(matInverse);
+
+        var v1 = vec3.create();
+        var v2 = vec3.create();
+        mat4.multiplyVec3(matInverse, lineStart, v1);
+        mat4.multiplyVec3(matInverse, lineEnd, v2);
+
+        var extent = vec3.createFrom(ent.scale[0] / 2.0,
+                                     ent.scale[1] / 2.0,
+                                     ent.scale[2] / 2.0);
+        vec3.subtract(v1, extent);
+        vec3.subtract(v2, extent);
+
+        var lMid = vec3.create();
+        vec3.add(v1, v2, lMid);
+        vec3.scale(lMid, 0.5);
+
+        var l = vec3.create();
+        vec3.subtract(v1, lMid, l);
+
+        var lExt = vec3.createFrom(Math.abs(l[0]),
+                                   Math.abs(l[1]),
+                                   Math.abs(l[2]));
+
+        if(Math.abs(lMid[0]) > extent[0] + lExt[0]) {
+            return false;
+        }
+        else if(Math.abs(lMid[1]) > extent[1] + lExt[1]) {
+            return false;
+        }
+        else if(Math.abs(lMid[2]) > extent[2] + lExt[2]) {
+            return false;
+        }
+        
+        vec3.cross(lMid, l);
+
+        var r = extent[1] * lExt[2] + extent[2] * lExt[1];
+        if(Math.abs(lMid[0]) > r) {
+            return false;
+        }
+        
+        r = extent[0] * lExt[2] + extent[2] * lExt[0];
+        if(Math.abs(lMid[1]) > r) {
+            return false;
+        }
+
+        r = extent[0] * lExt[1] + extent[1] * lExt[0];
+        if(Math.abs(lMid[2]) > r) {
+            return false;
+        }
+
+        // WHY WON'T THIS WORK?? T_T
+        // EDIT: IT FINALLY WORKSSSSSSS!
+        return true;
+    },
+
+    boxContainsPoint: function(aabb, point) {
+        var worldPos = aabb.getWorldPos();
+
+        var upper = vec3.create();
+        vec3.add(worldPos, aabb.extent, upper);
+
+        var lower = vec3.create();
+        vec3.subtract(worldPos, aabb.extent, lower);
+
+        if(upper[0] >= point[0] &&
+           lower[0] <= point[0] &&
+           upper[1] >= point[1] &&
+           lower[1] <= point[1] &&
+           upper[2] >= point[2] &&
+           lower[2] <= point[2]) {
+            return true;
+        }
+
+        return false;
+    },
+
+    boxOverlaps: function(aabb1, aabb2) {
+        var worldPos1 = aabb1.getWorldPos();
+        var worldPos2 = aabb2.getWorldPos();
+
+        var ab = vec3.create();
+        vec3.subtract(worldPos2, worldPos1, ab);
+
+        return (Math.abs(ab[0]) <= (aabb1.extent[0] + aabb2.extent[0]) &&
+                Math.abs(ab[1]) <= (aabb1.extent[1] + aabb2.extent[1]) &&
+                Math.abs(ab[2]) <= (aabb1.extent[2] + aabb2.extent[2]));
+    },
+
+    STATIC: 1,
+    ACTIVE: 1
+};
+sh.AABB = sh.Obj.extend({
+    init: function(pos, extent, refEntity) {
+        this.pos = pos;
+        this.extent = extent;
+        this.refEntity = refEntity;
+        this._dirty = false;
+
+        this.worldPos = vec3.create();
+        if(refEntity) {
+            vec3.add(refEntity.pos, this.pos, this.worldPos);
+        }
+        else {
+            vec3.set(this.pos, this.worldPos);
+        }
+    },
+
+    getWorldPos: function() {
+        if(this._dirty) {
+            vec3.add(this.refEntity.pos, this.pos, this.worldPos);
+        }
+
+        return this.worldPos;
+    },
+
+    getPoints: function() {
+        var p = this.getWorldPos();
+        var extX = this.extent[0];
+        var extY = this.extent[1];
+        var extZ = this.extent[2];
+
+        return [
+            [p[0] + extX, p[1] + extY, p[2] + extZ],
+            [p[0] - extX, p[1] + extY, p[2] + extZ],
+            [p[0] + extX, p[1] + extY, p[2] - extZ],
+            [p[0] - extX, p[1] + extY, p[2] - extZ]
+
+            [p[0] + extX, p[1] - extY, p[2] + extZ],
+            [p[0] - extX, p[1] - extY, p[2] + extZ],
+            [p[0] + extX, p[1] - extY, p[2] - extZ],
+            [p[0] - extX, p[1] - extY, p[2] - extZ]
+        ];
+    },
+
+    render: function(program) {
+        var mat = mat4.create();
+        var pos = vec3.create();
+        var scale = vec3.create();
+
+        vec3.set(this.getWorldPos(), pos);
+        vec3.subtract(pos, this.extent);
+
+        vec3.scale(this.extent, 2.0, scale);
+
+        mat4.identity(mat);
+        mat4.translate(mat, pos);
+        mat4.scale(mat, scale);
+
+        gl.uniformMatrix4fv(program.modelTransformLoc, false, mat);
+        sh.Cube.mesh.render(program.program, true);
+
+    }
+});
+sh.Quadtree = sh.Obj.extend({
+    init: function(aabb, capacity, depth) {
+        this.AABB = aabb;
+        this.capacity = capacity;
+        this.objects = [];
+        this.children = null;
+        this.depth = depth || 0;
+    },
+
+    add: function(entity) {
+        if(entity.AABB) {
+            if(sh.Collision.boxOverlaps(this.AABB, entity.AABB)) {
+                this._add(entity);
+            }
+        }
+    },
+
+    remove: function(entity) {
+        if(this.children) {
+            var children = this.children;
+            for(var i=0, l=children.length; i<l; i++) {
+                children[i].remove(entity);
+            }
+        }
+        else {
+            var idx = this.objects.indexOf(entity);
+            if(idx !== -1) {
+                this.objects.splice(idx, 1);
+            }
+        }
+    },
+
+    findObjects: function(aabb, func) {
+        if(sh.Collision.boxOverlaps(this.AABB, aabb)) {
+            if(this.children) {
+                var children = this.children;
+                for(var i=0, l=children.length; i<l; i++) {
+                    children[i].findObjects(aabb, func);
+                }
+            }
+            else {
+                var obj = this.objects;
+                for(var i=0, l=obj.length; i<l; i++) {
+                    func(obj[i]);
+                }
+            }
+        }
+    },
+
+    _add: function(entity) {
+        if(this.children) {
+            for(var i=0; i<this.children.length; i++) {
+                this.children[i].add(entity);
+            }
+        }
+        else {
+            if(this.objects.length > this.capacity && this.depth < 5) {
+                this.subdivide();
+                this._add(entity);
+            }
+            else {
+                this.objects.push(entity);
+            }
+        }
+    },
+
+    subdivide: function() {
+        var aabb = this.AABB;
+        var extent = vec3.create();
+        vec3.set(aabb.extent, extent);
+        extent[0] *= .5;
+        extent[2] *= .5;
+
+        this.children = [];
+
+        // Yackity yuck yuck
+        var pos = vec3.create(aabb.pos);
+        pos[0] -= extent[0];
+        pos[2] -= extent[2];
+        this.children.push(new sh.Quadtree(
+            new sh.AABB(pos, extent),
+            this.capacity,
+            this.depth + 1
+        ));
+
+        pos = vec3.create(aabb.pos);
+        pos[0] += extent[0];
+        pos[2] -= extent[2];
+        this.children.push(new sh.Quadtree(
+            new sh.AABB(pos, extent),
+            this.capacity,
+            this.depth + 1
+        ));
+
+        pos = vec3.create(aabb.pos);
+        pos[0] -= extent[0];
+        pos[2] += extent[2];
+        this.children.push(new sh.Quadtree(
+            new sh.AABB(pos, extent),
+            this.capacity,
+            this.depth + 1
+        ));
+
+        pos = vec3.create(aabb.pos);
+        pos[0] += extent[0];
+        pos[2] += extent[2];
+        this.children.push(new sh.Quadtree(
+            new sh.AABB(pos, extent),
+            this.capacity,
+            this.depth + 1
+        ));
+
+        for(var i=0; i<this.objects.length; i++) {
+            this._add(this.objects[i]);
+        }
+
+        this.objects = [];
+    },
+
+    render: function(program) {
+        this.AABB.render(program);
+
+        if(this.children) {
+            for(var i=0; i<this.children.length; i++) {
+                this.children[i].render(program);
+            }     
+        }
+    }
+});
+sh.Scene = sh.Obj.extend({
+    init: function(sceneWidth, sceneDepth) {
+        this.root = new sh.SceneNode();
+        this.root.AABB = null;
+        this._objectsById = {};
+        this._behaviors = [];
+        this.sceneWidth = sceneWidth;
+        this.sceneDepth = sceneDepth;
+
+        this._quadtree = new sh.Quadtree(
+            new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
+                        vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0)),
+            8
+        );
+
+        var _this = this;
+
+        function addObj(obj) {
+            if(obj.id) {
+                _this._objectsById[obj.id] = obj;
+            }
+
+            _this._quadtree.add(obj);
+
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                addObj(obj.children[i]);
+            }
+        }
+        sh.SceneNode.onAdd(addObj);
+
+        function removeObj(obj) {
+            if(obj.id) {
+                _this._objectsById[obj.id] = null;
+            }
+
+            _this._quadtree.remove(obj);
+
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                removeObj(obj.children[i]);
+            }
+        }
+        sh.SceneNode.onRemove(removeObj);
+    },
+
+    addObject: function(obj) {
+        this.root.addObject(obj);
+    },
+
+    getCamera: function() {
+        return this.camera;
+    },
+
+    setCamera: function(camera) {
+        this.camera = camera;
+    },
+
+    addBehavior: function(obj) {
+        this._behaviors.push(obj);
+    },
+
+    getObject: function(id) {
+        return this._objectsById[id];
+    },
+
+    findNearbyObjects: function(aabb, func) {
+        this._quadtree.findObjects(aabb, func);
+    },
+
+    checkCollisions: function(node) {
+        node = node || this.root;
+
+        if(node.collisionType === sh.Collision.ACTIVE) {
+            this.checkObjCollisions(node);
+        }
+
+        var children = node.children;
+        for(var i=0, l=children.length; i<l; i++) {
+            this.checkCollisions(children[i]);
+        }
+    },
+
+    checkObjCollisions: function(obj) {
+        if(obj.AABB) {
+            this.findNearbyObjects(
+                obj.AABB,
+                function(obj2) {
+                    if(obj != obj2 &&
+                       sh.Collision.boxOverlaps(obj.AABB, obj2.AABB)) {
+                        obj.revert();
+                    }
+                }
+            );
+        }
+    },
+
+    update: function(dt) {
+        this.camera.updateMatrices();
+        this.updateObject(this.root, dt);
+
+        for(var i=0, l=this._behaviors.length; i<l; i++) {
+            this._behaviors[i].update(dt);
+        }
+
+        this.checkCollisions();
+    },
+
+    updateObject: function(obj, dt, force) {
+        obj.update(dt);
+
+        var dirty = obj.needsWorldUpdate();
+        obj.updateMatrices(force);
+
+        var children = obj.children;
+        for(var i=0, l=children.length; i<l; i++) {
+            this.updateObject(children[i], dt, dirty || force);
+        }
+    }
 });(function() {
 
 var SceneNode = sh.Obj.extend({
@@ -325,6 +734,7 @@ var SceneNode = sh.Obj.extend({
         this.worldTransform = mat4.create();
         this._program = null;
         this.setAABB();
+        this.collisionType = sh.Collision.STATIC;
 
         this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;
@@ -380,11 +790,12 @@ var SceneNode = sh.Obj.extend({
         }
 
         if(!pos) {
-            pos = vec3.createFrom(0, 0, 0);
+            // Default is in the middle of the object
+            pos = vec3.create();
+            vec3.set(extent, pos);
         }
 
-
-        this.AABB = { pos: pos, extent: extent };
+        this.AABB = new sh.AABB(pos, extent, this);
     },
 
     setPos: function(x, y, z) {
@@ -392,6 +803,7 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] = y;
         this.pos[2] = z;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     setRot: function(xOrQuat, y, z) {
@@ -418,21 +830,25 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] += y;
         this.pos[2] += z;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateX: function(v) {
         this.pos[0] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateY: function(v) {
         this.pos[1] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     translateZ: function(v) {
         this.pos[2] += v;
         this._dirty = true;
+        this.AABB._dirty = true;
     },
 
     rotate: function(x, y, z) {
@@ -866,7 +1282,7 @@ sh.Cube = sh.SceneNode.extend({
             mat4.translate(this.preMatrix, [-.5, -.5, -.5]);
         }
 
-        if(!sh.Cube.mesh) {
+        if(typeof window !== 'undefined' && !sh.Cube.mesh) {
             sh.Cube.mesh = new sh.CubeMesh();
             sh.Cube.mesh.create();
         }
@@ -889,18 +1305,8 @@ sh.Camera = sh.SceneNode.extend({
         this.inverseTransform = mat4.create();
     },
 
-    update: function(dt) {
-        this.target.update(dt);
-    },
-
     updateMatrices: function() {
-        var target = this.target;
-        var dirty = target._dirty;
-        target.updateMatrices();
-
-        if(dirty) {
-            mat4.inverse(target._realTransform, this.inverseTransform);
-        }
+        mat4.inverse(this.target._realTransform, this.inverseTransform);
     }
 });
 
@@ -912,10 +1318,8 @@ sh.Renderer = sh.Obj.extend({
         this.height = h;
 
         this._objects = [];
-        this._objectsById = {};
         this._bufferCache = {};
         this._programCache = {};
-        this._behaviors = [];
 
         this._normalMatrix = mat3.create();
         this._worldTransform = mat4.create();
@@ -928,10 +1332,6 @@ sh.Renderer = sh.Obj.extend({
         function addObj(obj) {
             if(_this._objects.indexOf(obj) === -1) {
                 _this._objects.push(obj);
-
-                if(obj.id) {
-                    _this._objectsById[obj.id] = obj;
-                }
 
                 for(var i=0, l=obj.children.length; i<l; i++) {
                     addObj(obj.children[i]);
@@ -954,51 +1354,15 @@ sh.Renderer = sh.Obj.extend({
         sh.SceneNode.onRemove(removeObj);
     },
 
-    setCamera: function(camera) {
-        this.camera = camera;
-    },
-
-    getCamera: function() {
-        return this.camera;
-    },
-
-    addObject: function(obj) {
-        this.root.addObject(obj);
-    },
-
-    getObject: function(id) {
-        return this._objectsById[id];
-    },
-
-    addBehavior: function(obj) {
-        this._behaviors.push(obj);
+    iterate: function(func) {
+        var objs = this._objects;
+        for(var i=0, l=objs.length; i<l; i++) {
+            func(objs[i]);
+        }
     },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
-    },
-
-    update: function(dt) {
-        this.camera.update(dt);
-        this.camera.updateMatrices();
-
-        this.updateObject(this.root, dt);
-
-        for(var i=0, l=this._behaviors.length; i<l; i++) {
-            this._behaviors[i].update(dt);
-        }
-    },
-
-    updateObject: function(obj, dt, force) {
-        obj.update(dt);
-
-        var dirty = obj.needsWorldUpdate();
-        obj.updateMatrices(force);
-
-        var children = obj.children;
-        for(var i=0, l=children.length; i<l; i++) {
-            this.updateObject(children[i], dt, dirty || force);
-        }
     },
 
     loadProgram: function(obj) {
@@ -1021,13 +1385,13 @@ sh.Renderer = sh.Obj.extend({
         return null;
     },
 
-    render: function() {
-        if(!this.camera) {
+    render: function(scene) {
+        if(!scene.camera) {
             return;
         }
 
         mat4.multiply(this.persMatrix,
-                      this.camera.inverseTransform,
+                      scene.camera.inverseTransform,
                       this._worldTransform);
 
         var objs = this._objects;
@@ -1073,33 +1437,24 @@ sh.Renderer = sh.Obj.extend({
 
         // Render AABBs (DEBUG)
 
-        // var prog = this.loadProgram({ shaders: ['default.vsh', 'default.fsh'] });
-        // prog.use();
-        // if(prog.worldTransformLoc) {
-        //     gl.uniformMatrix4fv(prog.worldTransformLoc,
-        //                         false,
-        //                         this._worldTransform);
-        // }
+        var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
+        prog.use();
+        if(prog.worldTransformLoc) {
+            gl.uniformMatrix4fv(prog.worldTransformLoc,
+                                false,
+                                this._worldTransform);
+        }
 
-        // var mat = mat4.create();
-        // var pos = vec3.create();
-        // var scale = vec3.create();
 
-        // for(var i=0, l=objs.length; i<l; i++) {
-        //     var obj = objs[i];
-        //     vec3.add(obj.pos, obj.AABB.pos, pos);
-        //     vec3.add(pos, obj.AABB.extent);
-        //     vec3.subtract(pos, obj.AABB.extent);
+        for(var i=0, l=objs.length; i<l; i++) {
+            if(objs[i].AABB) {
+                objs[i].AABB.render(prog);
+            }
+        }
 
-        //     vec3.scale(obj.AABB.extent, 2.0, scale);
+        // Render Quadtree (DEBUG)
 
-        //     mat4.identity(mat);
-        //     mat4.translate(mat, pos);
-        //     mat4.scale(mat, scale);
-
-        //     gl.uniformMatrix4fv(prog.modelTransformLoc, false, mat);
-        //     sh.Cube.mesh.render(prog.program, true);
-        // }
+        scene._quadtree.render(prog);
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {

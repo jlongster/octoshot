@@ -15,6 +15,7 @@ var stats;
 var w = window.innerWidth;
 var h = window.innerHeight;
 var renderer;
+var scene;
 var gl;
 var server;
 var player;
@@ -74,25 +75,22 @@ function notify(msg) {
 }
 
 function init() {
-    renderer = new sh.Renderer(w, h, 255 * 4, 255 * 4);
+    renderer = new sh.Renderer(w, h);
+    scene = new sh.Scene(255 * 4, 255 * 4);
     server = new ServerConnection();
 
+    createLevel(scene);
+
     player = new Player();
-    renderer.setCamera(new sh.Camera(player));
+    scene.addObject(player);
+    scene.setCamera(new sh.Camera(player));
     renderer.perspective(45, w / h, 1.0, 5000.0);
 
     var terrain = new Terrain(null, null, null,
-                              renderer.sceneWidth,
-                              renderer.sceneDepth);
+                              scene.sceneWidth,
+                              scene.sceneDepth);
     terrain.create();
-    renderer.addObject(terrain);
-
-    for(var i=0; i<50; i++) {
-        var cube = new sh.Cube([50, 0, i*25],
-                               [0, 0, 0],
-                               [100, 100, 10]);
-        renderer.addObject(cube);
-    }
+    scene.addObject(terrain);
     
     document.getElementById('loading').style.display = 'none';
 
@@ -109,13 +107,12 @@ function heartbeat() {
     var now = Date.now();
     var dt = Math.min((now - last) / 1000., .1);
 
-    renderer.update(dt);
-    //checkCollisions();
+    scene.update(dt);
 
     gl.clearColor(0.0, 0.0, 0.0, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-    renderer.render();
+    renderer.render(scene);
 
     last = now;
     requestAnimFrame(heartbeat);

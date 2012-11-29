@@ -4,8 +4,9 @@ var remix = require('webremix');
 var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
-var World = require('./world');
+var Scene = require('./scene');
 var Entity = require('./static/js/entity');
+var level = require('./static/js/level');
 
 var app = express();
 var server = require('http').createServer(app);
@@ -17,7 +18,7 @@ app.configure(function() {
 // Sockets
 
 var CLIENTS = [];
-var world = new World();
+var scene = new Scene(255 * 4, 255 * 4);
 
 function broadcast(user, packet) {
     for(var i=0, l=CLIENTS.length; i<l; i++) {
@@ -55,7 +56,7 @@ function handlePacket(user, data) {
     switch(p.getPacketDesc(packet.type)) {
     case p.inputPacket:
         packet = p.parsePacket(data, p.inputPacket);
-        user.entity.handleServerInput(packet);
+        scene.update(user.entity, packet);
         break;
     case p.clickPacket:
         var entStates = {};
@@ -64,7 +65,7 @@ function handlePacket(user, data) {
                                             interp: packet.entInterps[i] };
         }
 
-        var ent = world.getHit(user,
+        var ent = scene.getHit(user,
                                entStates,
                                [packet.x, packet.y, packet.z],
                                [packet.x2, packet.y2, packet.z2]);
@@ -215,7 +216,7 @@ bserver.on('connection', function(client) {
         user.name = 'anon' + user.id;
         user.entity = new Entity();
         user.entity.id = user.name;
-        world.addEntity(user.entity);
+        scene.addObject(user.entity);
 
         console.log(user.name + ' connected [' + CLIENTS.length + ']');
 
@@ -300,7 +301,13 @@ bserver.on('connection', function(client) {
     client.on('close', function() {
         // Remove itself from the clients array
         CLIENTS.splice(CLIENTS.indexOf(user), 1);
-        world.removeEntity(user.entity);
+
+        // And from the scene
+        var ent = scene.getObject(user.name);
+        if(ent) {
+            ent._parent.removeObject(ent);
+        }
+
         console.log(user.name + ' disconnected [' + CLIENTS.length + ']');
 
         // Broadcast to everyone that he/she left
@@ -322,8 +329,10 @@ bserver.on('connection', function(client) {
     });
 });
 
+level.createLevel(scene);
+
 // Fire up the server
 
 console.log('Started server on ' + settings.port + '...');
 server.listen(settings.port);
-world.start(lookupUser, broadcast);
+scene.start(lookupUser, broadcast);

@@ -1,346 +1,120 @@
-(function() {
 
-var SceneNode = sh.Obj.extend({
-    init: function(pos, rot, scale) {
-        // TODO: proper type checking
-        if(pos && !pos.length) {
-            var opts = pos;
-            pos = opts.pos;
-            rot = opts.rot;
-            scale = opts.scale;
+sh.Scene = sh.Obj.extend({
+    init: function(sceneWidth, sceneDepth) {
+        this.root = new sh.SceneNode();
+        this.root.AABB = null;
+        this._objectsById = {};
+        this._behaviors = [];
+        this.sceneWidth = sceneWidth;
+        this.sceneDepth = sceneDepth;
 
-            if(opts.update) {
-                this.update = opts.update;
+        this._quadtree = new sh.Quadtree(
+            new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
+                        vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0)),
+            8
+        );
+
+        var _this = this;
+
+        function addObj(obj) {
+            if(obj.id) {
+                _this._objectsById[obj.id] = obj;
             }
 
-            if(opts.render) {
-                this.render = opts.render;
+            _this._quadtree.add(obj);
+
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                addObj(obj.children[i]);
             }
         }
+        sh.SceneNode.onAdd(addObj);
 
-        this.pos = pos || vec3.create([0, 0, 0]);
-        this.rot = rot || vec3.create([0, 0, 0]);
-        this.scale = scale || vec3.create([1, 1, 1]);
-        this.transform = mat4.create();
-        this.worldTransform = mat4.create();
-        this._program = null;
-        this.setAABB();
-
-        this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
-        this.useQuat = false;
-
-        this._scaleMatrix = mat4.create();
-        mat4.identity(this._scaleMatrix);
-
-        this._realTransform = mat4.create();
-
-        this.children = [];
-        this._dirty = true;
-        this._dirtyWorld = true;
-
-        this.transformLoc = null;
-        this.normalLoc = null;
-        this.shaders = ['default.vsh', 'default.fsh'];
-    },
-
-    setMaterial: function(shaders) {
-        this.shaders = shaders;
-    },
-
-    addObject: function(obj, inits) {
-        if(typeof obj == 'function') {
-            inits = inits || {};
-            var o = new SceneNode(inits.pos, inits.rot, inits.scale);
-            o.update = obj;
-            obj = o;
-        }
-
-        obj._parent = this;
-        this.children.push(obj);
-
-        SceneNode.fireAdd(obj);
-        return obj;
-    },
-
-    removeObject: function(obj) {
-        for(var i=0, l=this.children.length; i<l; i++) {
-            if(this.children[i] == obj) {
-                this.children.splice(i, 1);
-                break;
-            }
-        }
-
-        SceneNode.fireRemove(obj);
-    },
-
-    setAABB: function(pos, extent) {
-        if(!extent) {
-            extent = vec3.create();
-            vec3.scale(this.scale, .5, extent);
-        }
-
-        if(!pos) {
-            // Default is in the middle of the object
-            pos = vec3.create();
-            vec3.set(extent, pos);
-        }
-
-        this.AABB = new sh.AABB(pos, extent, this);
-    },
-
-    setPos: function(x, y, z) {
-        this.pos[0] = x;
-        this.pos[1] = y;
-        this.pos[2] = z;
-        this._dirty = true;
-        this.AABB._dirty = true;
-    },
-
-    setRot: function(xOrQuat, y, z) {
-        if(this.useQuat) {
-            this.quat = xOrQuat;
-        }
-        else {
-            this.rot[0] = xOrQuat;
-            this.rot[1] = y;
-            this.rot[2] = z;
-        }
-        this._dirty = true;
-    },
-
-    setScale: function(x, y, z) {
-        this.scale[0] = x;
-        this.scale[1] = y;
-        this.scale[2] = z;
-        this._dirty = true;
-    },
-
-    translate: function(x, y, z) {
-        this.pos[0] += x;
-        this.pos[1] += y;
-        this.pos[2] += z;
-        this._dirty = true;
-        this.AABB._dirty = true;
-    },
-
-    translateX: function(v) {
-        this.pos[0] += v;
-        this._dirty = true;
-        this.AABB._dirty = true;
-    },
-
-    translateY: function(v) {
-        this.pos[1] += v;
-        this._dirty = true;
-        this.AABB._dirty = true;
-    },
-
-    translateZ: function(v) {
-        this.pos[2] += v;
-        this._dirty = true;
-        this.AABB._dirty = true;
-    },
-
-    rotate: function(x, y, z) {
-        this.rot[0] += x;
-        this.rot[1] += y;
-        this.rot[2] += z;
-        this._dirty = true;
-    },
-
-    rotateX: function(v) {
-        if(this.useQuat) {
-            quat4.rotateX(this.quat, v);
-        }
-        else {
-            this.rot[0] += v;
-        }
-        this._dirty = true;
-    },
-
-    rotateY: function(v) {
-        if(this.useQuat) {
-            quat4.rotateY(this.quat, v);
-        }
-        else {
-            this.rot[1] += v;
-        }
-        this._dirty = true;
-    },
-
-    rotateZ: function(v) {
-        if(this.useQuat) {
-            quat4.rotateZ(this.quat, v);
-        }
-        else {
-            this.rot[2] += v;
-        }
-        this._dirty = true;
-    },
-
-    scale: function(x, y, z) {
-        this.scale[0] += x;
-        this.scale[1] += y;
-        this.scale[2] += z;
-        this._dirty = true;
-    },
-
-    scaleX: function(v) {
-        this.scale[0] += v;
-        this._dirty = true;
-    },
-
-    scaleY: function(v) {
-        this.scale[1] += v;
-        this._dirty = true;
-    },
-
-    scaleZ: function(v) {
-        this.scale[2] += v;
-        this._dirty = true;
-    },
-
-    moveLeft: function(v) {
-        var left = vec3.create([-1, 0, 0]);
-        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
-        quat4.multiplyVec3(quat, left);
-        vec3.scale(left, v);
-        this.translate(left[0], left[1], left[2]);
-    },
-
-    moveRight: function(v) {
-        var right = vec3.create([1, 0, 0]);
-        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
-        quat4.multiplyVec3(quat, right);
-        vec3.scale(right, v);
-        this.translate(right[0], right[1], right[2]);
-    },
-
-    moveForward: function(v) {
-        var forward = vec3.create([0, 0, -1]);
-        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
-        quat4.rotateX(quat, this.rot[0]);
-        quat4.multiplyVec3(quat, forward);
-        vec3.scale(forward, v);
-        this.translate(forward[0], forward[1], forward[2]);
-    },
-
-    moveBack: function(v) {
-        var back = vec3.create([0, 0, 1]);
-        var quat = quat4.fromAngleAxis(this.rot[1], [0, 1, 0]);
-        quat4.rotateX(quat, this.rot[0]);
-        quat4.multiplyVec3(quat, back);
-        vec3.scale(back, v);
-        this.translate(back[0], back[1], back[2]);
-    },
-
-    traverse: function(func) {
-        for(var i=0, l=this.children.length; i<l; i++) {
-            func(this.children[i]);
-            this.children[i].traverse(func);
-        }
-    },
-
-    needsWorldUpdate: function() {
-        return this._dirty || this._dirtyWorld;
-    },
-
-    updateMatrices: function(force) {
-        var parent = this._parent;
-
-        if(this._dirty) {
-            if(this.useQuat) {
-                mat4.fromRotationTranslation(this.quat, this.pos, this.transform);
-                mat4.scale(this.transform, this.scale);
-            }
-            else {
-                mat4.identity(this.transform);
-                mat4.translate(this.transform, this.pos);
-                mat4.rotateZ(this.transform, this.rot[2]);
-                mat4.rotateY(this.transform, this.rot[1]);
-                mat4.rotateX(this.transform, this.rot[0]);
-                mat4.scale(this.transform, this.scale);
+        function removeObj(obj) {
+            if(obj.id) {
+                _this._objectsById[obj.id] = null;
             }
 
-            // if(this.scale[0] !== 1.0 &&
-            //    this.scale[1] !== 1.0 &&
-            //    this.scale[2] !== 1.0) {
-            //     var scaleM = this._scaleMatrix;
-            //     scaleM[0] = this.scale[0];
-            //     scaleM[5] = this.scale[1];
-            //     scaleM[10] = this.scale[2];
-            //     mat4.multiply(this.transform, scaleM, this.transform);
-            // }
+            _this._quadtree.remove(obj);
 
-            this._dirty = false;
-            this._dirtyWorld = true;
+            for(var i=0, l=obj.children.length; i<l; i++) {
+                removeObj(obj.children[i]);
+            }
+        }
+        sh.SceneNode.onRemove(removeObj);
+    },
+
+    addObject: function(obj) {
+        this.root.addObject(obj);
+    },
+
+    getCamera: function() {
+        return this.camera;
+    },
+
+    setCamera: function(camera) {
+        this.camera = camera;
+    },
+
+    addBehavior: function(obj) {
+        this._behaviors.push(obj);
+    },
+
+    getObject: function(id) {
+        return this._objectsById[id];
+    },
+
+    findNearbyObjects: function(aabb, func) {
+        this._quadtree.findObjects(aabb, func);
+    },
+
+    checkCollisions: function(node) {
+        node = node || this.root;
+
+        if(node.collisionType === sh.Collision.ACTIVE) {
+            this.checkObjCollisions(node);
         }
 
-        if(this._dirtyWorld || force) {
-            if(parent) {
-                mat4.multiply(parent.worldTransform,
-                              this.transform,
-                              this.worldTransform);
-            }
-            else {
-                mat4.set(this.transform, this.worldTransform);
-            }
-
-            if(this.preMatrix) {
-                mat4.multiply(this.worldTransform,
-                              this.preMatrix,
-                              this._realTransform);
-            }
-            else {
-                mat4.set(this.worldTransform, this._realTransform);
-            }
-
-            this._dirtyWorld = false;
+        var children = node.children;
+        for(var i=0, l=children.length; i<l; i++) {
+            this.checkCollisions(children[i]);
         }
     },
 
-    render: function() {
+    checkObjCollisions: function(obj) {
+        if(obj.AABB) {
+            this.findNearbyObjects(
+                obj.AABB,
+                function(obj2) {
+                    if(obj != obj2 &&
+                       sh.Collision.boxOverlaps(obj.AABB, obj2.AABB)) {
+                        var b = sh.Collision.resolveBoxes(obj.AABB, obj2.AABB);
+                        obj.translate(b[0], b[1], b[2]);
+                    }
+                }
+            );
+        }
     },
 
-    update: function() {
+    update: function(dt) {
+        this.updateObject(this.root, dt);
+
+        for(var i=0, l=this._behaviors.length; i<l; i++) {
+            this._behaviors[i].update(dt);
+        }
+
+        this.checkCollisions();
+        this.camera.updateMatrices();
+    },
+
+    updateObject: function(obj, dt, force) {
+        obj.update(dt);
+
+        var dirty = obj.needsWorldUpdate();
+        obj.updateMatrices(force);
+
+        var children = obj.children;
+        for(var i=0, l=children.length; i<l; i++) {
+            this.updateObject(children[i], dt, dirty || force);
+        }
     }
 });
-
-SceneNode.onAdd = function(func) {
-    if(!SceneNode._onAdd) {
-        SceneNode._onAdd = [];
-    }
-
-    SceneNode._onAdd.push(func);
-};
-
-SceneNode.fireAdd = function(obj) {
-    var _onAdd = SceneNode._onAdd;
-
-    if(_onAdd) {
-        for(var i=0, l=_onAdd.length; i<l; i++) {
-            _onAdd[i](obj);
-        }
-    }
-};
-
-SceneNode.onRemove = function(func) {
-    if(!SceneNode._onRemove) {
-        SceneNode._onRemove = [];
-    }
-
-    SceneNode._onRemove.push(func);
-};
-
-SceneNode.fireRemove = function(obj) {
-    var _onRemove = SceneNode._onRemove;
-
-    if(_onRemove) {
-        for(var i=0, l=_onRemove.length; i<l; i++) {
-            _onRemove[i](obj);
-        }
-    }
-};
-
-sh.SceneNode = SceneNode;
-})();

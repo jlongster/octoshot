@@ -4,11 +4,11 @@
             var ent = new Entity({ pos: [obj.x, obj.y, obj.z],
                                    rot: [obj.rotX, obj.rotY, obj.rotZ] });
             ent.id = 'anon' + obj.id;
-            renderer.addObject(ent);
+            scene.addObject(ent);
         });
 
         server.on('leave', function(obj) {
-            var node = renderer.getObject('anon' + obj.id);
+            var node = scene.getObject('anon' + obj.id);
             if(node) {
                 node._parent.removeObject(node);
             }
@@ -17,10 +17,10 @@
         server.on('state', function(obj) {
             var node;
             if(obj.from !== 0) {
-                node = renderer.getObject('anon' + obj.from);
+                node = scene.getObject('anon' + obj.from);
             }
             else {
-                node = renderer.getCamera().target;
+                node = scene.getCamera().target;
             }
 
             if(node) {
@@ -34,11 +34,11 @@
                 var node;
                 if(obj.from !== 0) {
                     notify(obj.args[1] + ' was killed by ' + obj.args[0]);
-                    node = renderer.getObject('anon' + obj.from);
+                    node = scene.getObject('anon' + obj.from);
                 }
                 else {
                     notify('You were killed by ' + obj.args[0]);
-                    node = renderer.getCamera().target;
+                    node = scene.getCamera().target;
                 }
 
                 if(node) {

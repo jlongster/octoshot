@@ -14,6 +14,7 @@
 
             this.sizeX = sizeX;
             this.sizeY = sizeY;
+            this.AABB = null;
 
             var curX = 0;
             var curY = 0;
@@ -105,24 +106,20 @@
                 for(var x=0; x<=sizeX; x++) {
                     var i = (y * rowLength + x) * 3;
 
-                    // var top = ((y == sizeY-1 ? y : y + 1) * sizeX + x) * 3 + 1;
-                    // var bottom = ((y == 0 ? y : y - 1) * sizeX + x) * 3 + 1;
-                    // var left = (y * sizeX + (x == sizeX - 1 ? x : x + 1)) * 3 + 1;
-                    // var right = (y * sizeX + (x == 0 ? x : x -1)) * 3 + 1;
+                    var top = ((y == sizeY ? y : y + 1) * rowLength + x) * 3 + 1;
+                    var bottom = ((y == 0 ? y : y - 1) * rowLength + x) * 3 + 1;
+                    var left = (y * rowLength + (x == sizeX ? x : x + 1)) * 3 + 1;
+                    var right = (y * rowLength + (x == 0 ? x : x - 1)) * 3 + 1;
 
-                    // var sx = vertices[left] - vertices[right];
-                    // var sy = vertices[top] - vertices[bottom];
+                    var sx = vertices[left] - vertices[right];
+                    var sy = vertices[top] - vertices[bottom];
 
-                    // var normal = vec3.create([-sx, 2, -sy]);
-                    // vec3.normalize(normal);
+                    var normal = vec3.create([-sx, 2, -sy]);
+                    vec3.normalize(normal);
 
-                    // normals[i] = normal[0];
-                    // normals[i+1] = normal[1];
-                    // normals[i+2] = normal[2];
-
-                    normals[i] = 0.0;
-                    normals[i+1] = 1.0;
-                    normals[i+2] = 0.0;
+                    normals[i] = normal[0];
+                    normals[i+1] = normal[1];
+                    normals[i+2] = normal[2];
                 }
             }
 

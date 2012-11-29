@@ -1,29 +1,17 @@
 
 sh.Renderer = sh.Obj.extend({
-    init: function(w, h, sceneWidth, sceneDepth) {
+    init: function(w, h) {
         this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
         this.width = w;
         this.height = h;
-        this.sceneWidth = sceneWidth;
-        this.sceneDepth = sceneDepth;
 
         this._objects = [];
-        this._objectsById = {};
         this._bufferCache = {};
         this._programCache = {};
-        this._behaviors = [];
 
         this._normalMatrix = mat3.create();
         this._worldTransform = mat4.create();
-
-        var sw = sceneWidth;
-        var sd = sceneDepth;
-        this._quadtree = new sh.Quadtree(
-            new sh.AABB(vec3.createFrom(sw / 2.0, 50, sw / 2.0),
-                        vec3.createFrom(sw / 2.0, 50, sd / 2.0)),
-            4
-        );
 
         gl.enable(gl.DEPTH_TEST);
         gl.enable(gl.CULL_FACE);
@@ -34,15 +22,9 @@ sh.Renderer = sh.Obj.extend({
             if(_this._objects.indexOf(obj) === -1) {
                 _this._objects.push(obj);
 
-                if(obj.id) {
-                    _this._objectsById[obj.id] = obj;
-                }
-
                 for(var i=0, l=obj.children.length; i<l; i++) {
                     addObj(obj.children[i]);
                 }
-
-                _this._quadtree.add(obj);
             }
         }
         sh.SceneNode.onAdd(addObj);
@@ -61,51 +43,15 @@ sh.Renderer = sh.Obj.extend({
         sh.SceneNode.onRemove(removeObj);
     },
 
-    setCamera: function(camera) {
-        this.camera = camera;
-    },
-
-    getCamera: function() {
-        return this.camera;
-    },
-
-    addObject: function(obj) {
-        this.root.addObject(obj);
-    },
-
-    getObject: function(id) {
-        return this._objectsById[id];
-    },
-
-    addBehavior: function(obj) {
-        this._behaviors.push(obj);
+    iterate: function(func) {
+        var objs = this._objects;
+        for(var i=0, l=objs.length; i<l; i++) {
+            func(objs[i]);
+        }
     },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
-    },
-
-    update: function(dt) {
-        this.camera.update(dt);
-        this.camera.updateMatrices();
-
-        this.updateObject(this.root, dt);
-
-        for(var i=0, l=this._behaviors.length; i<l; i++) {
-            this._behaviors[i].update(dt);
-        }
-    },
-
-    updateObject: function(obj, dt, force) {
-        obj.update(dt);
-
-        var dirty = obj.needsWorldUpdate();
-        obj.updateMatrices(force);
-
-        var children = obj.children;
-        for(var i=0, l=children.length; i<l; i++) {
-            this.updateObject(children[i], dt, dirty || force);
-        }
     },
 
     loadProgram: function(obj) {
@@ -128,13 +74,13 @@ sh.Renderer = sh.Obj.extend({
         return null;
     },
 
-    render: function() {
-        if(!this.camera) {
+    render: function(scene) {
+        if(!scene.camera) {
             return;
         }
 
         mat4.multiply(this.persMatrix,
-                      this.camera.inverseTransform,
+                      scene.camera.inverseTransform,
                       this._worldTransform);
 
         var objs = this._objects;
@@ -197,7 +143,7 @@ sh.Renderer = sh.Obj.extend({
 
         // Render Quadtree (DEBUG)
 
-        this._quadtree.render(prog);
+        scene._quadtree.render(prog);
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {

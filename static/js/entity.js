@@ -1,11 +1,12 @@
 
-(function(SceneNode, Cube, CubeMesh, Terrain, packets, vec3) {
+(function(SceneNode, Cube, CubeMesh, Terrain, Collision, packets, vec3) {
 
     var Entity = SceneNode.extend({
         init: function(opts) {
             opts = opts || {};
             this.parent(opts.pos, opts.rot, opts.scale);
             this.speed = opts.speed || 100;
+            this.collisionType = Collision.ACTIVE;
 
             this.sequenceId = 0;
             this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
@@ -16,10 +17,12 @@
             }
 
             if(!opts.scale) {
-                this.setScale(10, 10, 10);
+                this.setScale(25, 25, 25);
             }
 
-            this.setAABB();
+            var halfScale = vec3.create();
+            vec3.scale(this.scale, .5, halfScale);
+            this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
 
             this.goodPos = vec3.create(this.pos);
             this.goodRot = vec3.create(this.rot);
@@ -44,12 +47,7 @@
 
         handleServerInput: function(state) {
             // Run the entity's movement on the server-side.
-
             var dt = state.dt;
-            var diffPos = vec3.create();
-            vec3.set(this.pos, diffPos);
-            var diffRot = vec3.create();
-            vec3.set(this.rot, diffRot);
 
             this.rotateX(state.mouseY * -Math.PI / 6.0 * dt);
             this.rotateY(state.mouseX * -Math.PI / 6.0 * dt);
@@ -79,12 +77,24 @@
             if(state.down) {
                 this.moveBack(this.speed * dt);
             }
-            
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
 
-            vec3.subtract(this.pos, diffPos, diffPos);
-            vec3.subtract(this.rot, diffRot, diffRot);
-            this.sendInput(diffPos, diffRot, state.sequenceId);
+            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+        },
+
+        snapshot: function() {
+            vec3.set(this.pos, this.historyPos);
+            vec3.set(this.rot, this.historyRot);
+        },
+
+        revert: function(alsoRot) {
+            vec3.set(this.historyPos, this.pos);
+            vec3.set(this.historyRot, this.rot);
+        },
+
+        sendDiff: function(sequenceId) {
+            vec3.subtract(this.pos, this.historyPos, this.historyPos);
+            vec3.subtract(this.rot, this.historyRot, this.historyRot);
+            this.sendInput(this.historyPos, this.historyRot, sequenceId);
         },
 
         sendInput: function(diffPos, diffRot, id) {
@@ -142,7 +152,7 @@
                     // have one more in the history, apply the
                     // interpolation that the client performs
                     // (important for fast movement)
-                    
+
                     var targetPos = vec3.create();
                     var targetRot = vec3.create();
                     vec3.add(this.pos, [state.x, state.y, state.z], targetPos);
@@ -180,7 +190,7 @@
                 this.setRot(0, 0, 0);
                 break;
             }
-            
+
             this.interp = 1.0;
             this.packetBuffer = [];
             this.startPos = this.targetPos = null;
@@ -251,6 +261,7 @@
                  null,
                  null,
                  require('./terrain'),
+                 require('./node-shade').Collision,
                  require('./packets'),
                  require('./shade/gl-matrix').vec3] :
-                [sh.SceneNode, sh.Cube, sh.CubeMesh, Terrain, null, vec3]));
+                [sh.SceneNode, sh.Cube, sh.CubeMesh, Terrain, sh.Collision, null, vec3]));
