@@ -65,12 +65,14 @@ function handlePacket(user, data) {
                                             interp: packet.entInterps[i] };
         }
 
-        var ent = scene.getHit(user,
-                               entStates,
-                               [packet.x, packet.y, packet.z],
-                               [packet.x2, packet.y2, packet.z2]);
-        if(ent) {
-            handleDeath(user, lookupUser(ent));
+        var ents = scene.getHit(user,
+                                entStates,
+                                [packet.x, packet.y, packet.z],
+                                [packet.x2, packet.y2, packet.z2]);
+        if(ents.length) {
+            for(var i=0; i<ents.length; i++) {
+                handleDeath(user, lookupUser(ents[i]));
+            }
         }
         break;
     case p.messagePacket:

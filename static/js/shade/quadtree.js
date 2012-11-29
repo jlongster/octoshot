@@ -48,6 +48,96 @@ sh.Quadtree = sh.Obj.extend({
         }
     },
 
+    findObjectsInFrustum: function(frustum, cameraPoint, func) {
+        // Forcefully render the first two levels
+        if(this.depth < 2) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+        }
+
+        var v = vec3.create();
+        var aabb = this.AABB;
+        var pos = aabb.getWorldPos();
+        var extent = vec3.create();
+        vec3.set(aabb.extent, extent);
+
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[2] = -extent[2];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[1] = -extent[1];
+        extent[2] = -extent[2];
+
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[2] = -extent[2];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        // Always render the box that the player is standing in
+        if(sh.Collision.boxContainsPoint(this.AABB, cameraPoint)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+        }
+    },
+
+    _findObjectsInFrustum: function(frustum, cameraPoint, func) {
+        if(this.children) {
+            var children = this.children;
+            for(var i=0, l=children.length; i<l; i++) {
+                children[i].findObjectsInFrustum(frustum, cameraPoint, func);
+            }
+        }
+        else {
+            var objs = this.objects;
+            for(var i=0, l=objs.length; i<l; i++) {
+                func(objs[i]);
+            }
+        }
+    },
+
     _add: function(entity) {
         if(this.children) {
             for(var i=0; i<this.children.length; i++) {
@@ -124,7 +214,7 @@ sh.Quadtree = sh.Obj.extend({
         if(this.children) {
             for(var i=0; i<this.children.length; i++) {
                 this.children[i].render(program);
-            }     
+            }
         }
     }
 });

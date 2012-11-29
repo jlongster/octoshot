@@ -1,12 +1,14 @@
 
-(function(SceneNode, Cube, CubeMesh, Terrain, Collision, packets, vec3) {
+(function(SceneNode, Cube, CubeMesh, Terrain, Collision, packets, vec3, mat4) {
 
     var Entity = SceneNode.extend({
         init: function(opts) {
             opts = opts || {};
             this.parent(opts.pos, opts.rot, opts.scale);
             this.speed = opts.speed || 100;
-            this.collisionType = Collision.ACTIVE;
+
+            // The server does the collision for us (whee)
+            this.collisionType = Collision.NONE;
 
             this.sequenceId = 0;
             this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
@@ -16,13 +18,18 @@
                 this.rotateY(Math.PI);
             }
 
+            // Center whatever mesh is used
+            this.preMatrix = mat4.create();
+            mat4.identity(this.preMatrix);
+            mat4.translate(this.preMatrix, [-.5, -.5, -.5]);
+
             if(!opts.scale) {
                 this.setScale(25, 25, 25);
             }
 
             var halfScale = vec3.create();
             vec3.scale(this.scale, .5, halfScale);
-            this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
+            this.setAABB([0, 0, 0], halfScale);
 
             this.goodPos = vec3.create(this.pos);
             this.goodRot = vec3.create(this.rot);
@@ -203,6 +210,7 @@
                 vec3.lerp(this.startPos, this.targetPos, this.interp, this.pos);
                 vec3.lerp(this.startRot, this.targetRot, this.interp, this.rot);
                 this._dirty = true;
+                this.AABB._dirty = true;
             }
         },
 
@@ -263,5 +271,6 @@
                  require('./terrain'),
                  require('./node-shade').Collision,
                  require('./packets'),
-                 require('./shade/gl-matrix').vec3] :
-                [sh.SceneNode, sh.Cube, sh.CubeMesh, Terrain, sh.Collision, null, vec3]));
+                 require('./shade/gl-matrix').vec3,
+                 require('./shade/gl-matrix').mat4] :
+                [sh.SceneNode, sh.Cube, sh.CubeMesh, Terrain, sh.Collision, null, vec3, mat4]));

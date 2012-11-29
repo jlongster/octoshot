@@ -1,9 +1,10 @@
 
-(function(Entity, Terrain, vec3) {
+(function(Entity, Terrain, Collision, vec3) {
 
     var Player = Entity.extend({
         init: function(opts) {
             this.parent(opts);
+            this.collisionType = Collision.ACTIVE;
 
             var halfScale = vec3.create();
             vec3.scale(this.scale, .5, halfScale);
@@ -137,8 +138,7 @@
                 var entInterps = [];
                 var seqIds = [];
 
-                // TODO: use iterate, not traverse
-                renderer.root.traverse(function(obj) {
+                scene.traverse(function(obj) {
                     if(obj instanceof Entity && obj.id) {
                         entIds.push(obj.id);
                         entInterps.push(obj.interp);
@@ -146,6 +146,7 @@
                     }
                 });
 
+                console.log('shooting');
                 server.sendClick(entIds, entInterps, seqIds, v1, v2);
             }
         },
@@ -213,15 +214,15 @@
             vec3.add(goodRot, [state.rotX, state.rotY, state.rotZ]);
 
             if(!this.isGod) {
-                // vec3.set(goodPos, pos);
-                // vec3.set(goodRot, rot);
+                vec3.set(goodPos, pos);
+                vec3.set(goodRot, rot);
 
-                // // Apply the rest to get the final state
-                // for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
-                //     var pState = buffer[i];
-                //     vec3.add(pos, [pState.x, pState.y, pState.z]);
-                //     vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
-                // }
+                // Apply the rest to get the final state
+                for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
+                    var pState = buffer[i];
+                    vec3.add(pos, [pState.x, pState.y, pState.z]);
+                    vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+                }
             }
 
             buffer = buffer.slice(bufferIdx + 1);
@@ -238,5 +239,6 @@
 }).apply(this, typeof module !== 'undefined' ?
          [require('./entity'),
           require('./terrain'),
+          require('./node-shade').Collision,
           require('./shade/gl-matrix').vec3] :
-         [Entity, Terrain, vec3]);
+         [Entity, Terrain, sh.Collision, vec3]);

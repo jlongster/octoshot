@@ -67,6 +67,10 @@ sh.Scene = sh.Obj.extend({
         this._quadtree.findObjects(aabb, func);
     },
 
+    traverse: function(func) {
+        this.root.traverse(func);
+    },
+
     checkCollisions: function(node) {
         node = node || this.root;
 
@@ -86,6 +90,7 @@ sh.Scene = sh.Obj.extend({
                 obj.AABB,
                 function(obj2) {
                     if(obj != obj2 &&
+                       obj2.collisionType != sh.Collision.NONE &&
                        sh.Collision.boxOverlaps(obj.AABB, obj2.AABB)) {
                         var b = sh.Collision.resolveBoxes(obj.AABB, obj2.AABB);
                         obj.translate(b[0], b[1], b[2]);
@@ -93,6 +98,14 @@ sh.Scene = sh.Obj.extend({
                 }
             );
         }
+    },
+
+    fillQueue: function(arr, cameraPoint, frustum) {
+        this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
+            if(arr.indexOf(obj) === -1) {
+                arr.push(obj);
+            }
+        });
     },
 
     update: function(dt) {

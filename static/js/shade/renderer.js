@@ -1,7 +1,6 @@
 
 sh.Renderer = sh.Obj.extend({
     init: function(w, h) {
-        this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
         this.width = w;
         this.height = h;
@@ -18,37 +17,36 @@ sh.Renderer = sh.Obj.extend({
 
         var _this = this;
 
-        function addObj(obj) {
-            if(_this._objects.indexOf(obj) === -1) {
-                _this._objects.push(obj);
+        // function addObj(obj) {
+        //     if(_this._objects.indexOf(obj) === -1) {
+        //         _this._objects.push(obj);
 
-                for(var i=0, l=obj.children.length; i<l; i++) {
-                    addObj(obj.children[i]);
-                }
-            }
-        }
-        sh.SceneNode.onAdd(addObj);
+        //         for(var i=0, l=obj.children.length; i<l; i++) {
+        //             addObj(obj.children[i]);
+        //         }
+        //     }
+        // }
+        // sh.SceneNode.onAdd(addObj);
 
-        function removeObj(obj) {
-            _this._objects.splice(_this._objects.indexOf(obj), 1);
+        // function removeObj(obj) {
+        //     var idx = _this._objects.indexOf(obj);
+        //     if(idx !== -1) {
+        //         _this._objects.splice(idx, 1);
+        //     }
 
-            if(obj.id) {
-                _this._objectsById[obj.id] = null;
-            }
-
-            for(var i=0, l=obj.children.length; i<l; i++) {
-                removeObj(obj.children[i]);
-            }
-        }
-        sh.SceneNode.onRemove(removeObj);
+        //     for(var i=0, l=obj.children.length; i<l; i++) {
+        //         removeObj(obj.children[i]);
+        //     }
+        // }
+        // sh.SceneNode.onRemove(removeObj);
     },
 
-    iterate: function(func) {
-        var objs = this._objects;
-        for(var i=0, l=objs.length; i<l; i++) {
-            func(objs[i]);
-        }
-    },
+    // iterate: function(func) {
+    //     var objs = this._objects;
+    //     for(var i=0, l=objs.length; i<l; i++) {
+    //         func(objs[i]);
+    //     }
+    // },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
@@ -82,6 +80,11 @@ sh.Renderer = sh.Obj.extend({
         mat4.multiply(this.persMatrix,
                       scene.camera.inverseTransform,
                       this._worldTransform);
+
+        this._objects = [];
+        scene.fillQueue(this._objects,
+                        scene.camera.target.pos,
+                        this._worldTransform);
 
         var objs = this._objects;
         var lastProg = null;
@@ -134,7 +137,6 @@ sh.Renderer = sh.Obj.extend({
                                 this._worldTransform);
         }
 
-
         for(var i=0, l=objs.length; i<l; i++) {
             if(objs[i].AABB) {
                 objs[i].AABB.render(prog);
@@ -143,7 +145,7 @@ sh.Renderer = sh.Obj.extend({
 
         // Render Quadtree (DEBUG)
 
-        scene._quadtree.render(prog);
+        //scene._quadtree.render(prog);
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {

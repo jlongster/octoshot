@@ -1,5 +1,4 @@
-
-(function(SimplexNoise, SceneNode) {
+(function(SimplexNoise, SceneNode, Collision) {
     var seed = 124;
     function random() {
         seed = ((seed * 1103515245) + 12345) & 0x7fffffff;
@@ -14,7 +13,7 @@
 
             this.sizeX = sizeX;
             this.sizeY = sizeY;
-            this.AABB = null;
+            this.collisionType = Collision.NONE;
 
             var curX = 0;
             var curY = 0;
@@ -61,10 +60,10 @@
             this.parent(pos, rot, scale);
             this.sizeX = sizeX;
             this.sizeY = sizeY;
-            // this.setAABB(null, vec3.createFrom(sizeX / 2.0,
-            //                                    150,
-            //                                    sizeY / 2.0));
-            this.AABB = null;
+            this.setAABB(null, vec3.createFrom(sizeX / 2.0,
+                                               150,
+                                               sizeY / 2.0));
+            this.collisionType = Collision.NONE;
 
             this.setMaterial(['terrain.vsh', 'terrain.fsh']);
         },
@@ -222,5 +221,7 @@
     }
 
 }).apply(this, typeof module !== 'undefined' ?
-         [require('./simplex-noise'), require('./node-shade').SceneNode] :
-         [SimplexNoise,  sh.SceneNode]);
+         [require('./simplex-noise'),
+          require('./node-shade').SceneNode,
+          require('./node-shade').Collision] :
+         [SimplexNoise,  sh.SceneNode, sh.Collision]);

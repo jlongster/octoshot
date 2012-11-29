@@ -1,9 +1,13 @@
 
 sh.Collision = {
     boxLineHit: function(ent, lineStart, lineEnd) {
+        var aabb = ent.AABB;
         var matInverse = mat4.create();
+
         mat4.identity(matInverse);
-        mat4.translate(matInverse, ent.pos);
+        mat4.translate(matInverse, aabb.getWorldPos());
+        console.log(aabb.getWorldPos());
+        console.log(aabb.extent);
         mat4.rotateZ(matInverse, ent.rot[2]);
         mat4.rotateY(matInverse, ent.rot[1]);
         mat4.rotateX(matInverse, ent.rot[0]);
@@ -14,12 +18,7 @@ sh.Collision = {
         mat4.multiplyVec3(matInverse, lineStart, v1);
         mat4.multiplyVec3(matInverse, lineEnd, v2);
 
-        var extent = vec3.createFrom(ent.scale[0] / 2.0,
-                                     ent.scale[1] / 2.0,
-                                     ent.scale[2] / 2.0);
-        vec3.subtract(v1, extent);
-        vec3.subtract(v2, extent);
-
+        var extent = aabb.extent;
         var lMid = vec3.create();
         vec3.add(v1, v2, lMid);
         vec3.scale(lMid, 0.5);
@@ -84,6 +83,16 @@ sh.Collision = {
         return false;
     },
 
+    frustumContainsPoint: function(mat, vec) {
+        var clip = vec4.createFrom(vec[0], vec[1], vec[2], 1.0);
+        mat4.multiplyVec4(mat, clip);
+
+        return (Math.abs(clip[0]) < clip[3] &&
+                Math.abs(clip[1]) < clip[3] &&
+                0 < clip[2] &&
+                clip[2] < clip[3]);
+    },
+
     boxOverlaps: function(aabb1, aabb2) {
         var worldPos1 = aabb1.getWorldPos();
         var worldPos2 = aabb2.getWorldPos();
@@ -91,9 +100,9 @@ sh.Collision = {
         var ab = vec3.create();
         vec3.subtract(worldPos2, worldPos1, ab);
 
-        return (Math.abs(ab[0]) < (aabb1.extent[0] + aabb2.extent[0]) &&
-                Math.abs(ab[1]) < (aabb1.extent[1] + aabb2.extent[1]) &&
-                Math.abs(ab[2]) < (aabb1.extent[2] + aabb2.extent[2]));
+        return (Math.abs(ab[0]) <= (aabb1.extent[0] + aabb2.extent[0]) &&
+                Math.abs(ab[1]) <= (aabb1.extent[1] + aabb2.extent[1]) &&
+                Math.abs(ab[2]) <= (aabb1.extent[2] + aabb2.extent[2]));
     },
 
     resolveBoxes: function(aabb1, aabb2) {
@@ -134,5 +143,6 @@ sh.Collision = {
     },
 
     STATIC: 1,
-    ACTIVE: 2
+    ACTIVE: 2,
+    NONE: 3
 };

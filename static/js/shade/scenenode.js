@@ -236,8 +236,9 @@ var SceneNode = sh.Obj.extend({
     },
 
     traverse: function(func) {
+        func(this);
+
         for(var i=0, l=this.children.length; i<l; i++) {
-            func(this.children[i]);
             this.children[i].traverse(func);
         }
     },

@@ -3,31 +3,35 @@ var shade = require('./static/js/node-shade');
 var p = require('./static/js/packets');
 var collision = require('./static/js/node-shade').Collision;
 var Scene = require('./static/js/node-shade').Scene;
+var Entity = require('./static/js/entity');
 
 module.exports = Scene.extend({
     init: function(sceneWidth, sceneDepth) {
         this.parent(sceneWidth, sceneDepth);
-        this.entities = [];
         this.packetBuffer = [];
     },
 
     getHit: function(user, entStates, start, end) {
-        var ents = this.entities;
-        for(var i=0, l=ents.length; i<l; i++) {
-            var ent = ents[i];
+        var res = [];
+
+        this.traverse(function(ent) {
+            if(!(ent instanceof Entity)) {
+                return;
+            }
 
             if(ent !== user.entity) {
                 ent.rewind(entStates[ent.id].seq,
                            entStates[ent.id].interp);
 
                 if(collision.boxLineHit(ent, start, end)) {
-                    return ents[i];
+                    res.push(ent);
                 }
 
                 ent.unrewind();
             }
+        });
 
-        }
+        return res;
     },
 
     update: function(entity, packet) {
@@ -40,12 +44,13 @@ module.exports = Scene.extend({
     start: function(lookupUser, broadcast) {
         var _this = this;
         setInterval(function() {
-            var ents = _this.entities;
+            _this.traverse(function(ent) {
+                if(!(ent instanceof Entity)) {
+                    return;
+                }
 
-            for(var i=0, l=ents.length; i<l; i++) {
-                var entity = ents[i];
-                var user = lookupUser(entity);
-                var buffer = entity.flushPackets();
+                var user = lookupUser(ent);
+                var buffer = ent.flushPackets();
 
                 if(buffer.length) {
                     var state = {
@@ -73,9 +78,9 @@ module.exports = Scene.extend({
                     user.stream.write(p.makePacket(state, p.statePacket));
                     state.from = user.id;
                     broadcast(user, p.makePacket(state, p.statePacket));
-                    entity.saveHistory(state);
+                    ent.saveHistory(state);
                 }
-            }
+            });
         }, 100);
     }
 });

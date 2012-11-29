@@ -301,9 +301,13 @@ sh.Resources = sh.Obj.extend({
 });
 sh.Collision = {
     boxLineHit: function(ent, lineStart, lineEnd) {
+        var aabb = ent.AABB;
         var matInverse = mat4.create();
+
         mat4.identity(matInverse);
-        mat4.translate(matInverse, ent.pos);
+        mat4.translate(matInverse, aabb.getWorldPos());
+        console.log(aabb.getWorldPos());
+        console.log(aabb.extent);
         mat4.rotateZ(matInverse, ent.rot[2]);
         mat4.rotateY(matInverse, ent.rot[1]);
         mat4.rotateX(matInverse, ent.rot[0]);
@@ -314,12 +318,7 @@ sh.Collision = {
         mat4.multiplyVec3(matInverse, lineStart, v1);
         mat4.multiplyVec3(matInverse, lineEnd, v2);
 
-        var extent = vec3.createFrom(ent.scale[0] / 2.0,
-                                     ent.scale[1] / 2.0,
-                                     ent.scale[2] / 2.0);
-        vec3.subtract(v1, extent);
-        vec3.subtract(v2, extent);
-
+        var extent = aabb.extent;
         var lMid = vec3.create();
         vec3.add(v1, v2, lMid);
         vec3.scale(lMid, 0.5);
@@ -384,6 +383,16 @@ sh.Collision = {
         return false;
     },
 
+    frustumContainsPoint: function(mat, vec) {
+        var clip = vec4.createFrom(vec[0], vec[1], vec[2], 1.0);
+        mat4.multiplyVec4(mat, clip);
+
+        return (Math.abs(clip[0]) < clip[3] &&
+                Math.abs(clip[1]) < clip[3] &&
+                0 < clip[2] &&
+                clip[2] < clip[3]);
+    },
+
     boxOverlaps: function(aabb1, aabb2) {
         var worldPos1 = aabb1.getWorldPos();
         var worldPos2 = aabb2.getWorldPos();
@@ -396,8 +405,46 @@ sh.Collision = {
                 Math.abs(ab[2]) <= (aabb1.extent[2] + aabb2.extent[2]));
     },
 
+    resolveBoxes: function(aabb1, aabb2) {
+        var worldPos1 = aabb1.getWorldPos();
+        var worldPos2 = aabb2.getWorldPos();
+
+        var ab = vec3.create();
+        vec3.subtract(worldPos2, worldPos1, ab);
+
+        var f1 = aabb1.extent[0] + aabb2.extent[0] - Math.abs(ab[0]);
+        var f2 = aabb1.extent[1] + aabb2.extent[1] - Math.abs(ab[1]);
+        var f3 = aabb1.extent[2] + aabb2.extent[2] - Math.abs(ab[2]);
+
+        if(f1 < f2 && f1 < f3) {
+            if(ab[0] > 0) {
+                return [-f1, 0, 0];
+            }
+            else {
+                return [f1, 0, 0];
+            }
+        }
+        else if(f2 < f1 && f2 < f3) {
+            if(ab[1] > 0) {
+                return [0, -f2, 0];
+            }
+            else {
+                return [0, f2, 0];
+            }
+        }
+        else if(f3 < f1 && f3 < f2) {
+            if(ab[2] > 0) {
+                return [0, 0, -f3];
+            }
+            else {
+                return [0, 0, f3];
+            }
+        }
+    },
+
     STATIC: 1,
-    ACTIVE: 1
+    ACTIVE: 2,
+    NONE: 3
 };
 sh.AABB = sh.Obj.extend({
     init: function(pos, extent, refEntity) {
@@ -458,7 +505,6 @@ sh.AABB = sh.Obj.extend({
 
         gl.uniformMatrix4fv(program.modelTransformLoc, false, mat);
         sh.Cube.mesh.render(program.program, true);
-
     }
 });
 sh.Quadtree = sh.Obj.extend({
@@ -506,6 +552,96 @@ sh.Quadtree = sh.Obj.extend({
                 for(var i=0, l=obj.length; i<l; i++) {
                     func(obj[i]);
                 }
+            }
+        }
+    },
+
+    findObjectsInFrustum: function(frustum, cameraPoint, func) {
+        // Forcefully render the first two levels
+        if(this.depth < 2) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+        }
+
+        var v = vec3.create();
+        var aabb = this.AABB;
+        var pos = aabb.getWorldPos();
+        var extent = vec3.create();
+        vec3.set(aabb.extent, extent);
+
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[2] = -extent[2];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[1] = -extent[1];
+        extent[2] = -extent[2];
+
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[2] = -extent[2];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        extent[0] = -extent[0];
+        vec3.add(pos, extent, v);
+        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+            return;
+        }
+
+        // Always render the box that the player is standing in
+        if(sh.Collision.boxContainsPoint(this.AABB, cameraPoint)) {
+            this._findObjectsInFrustum(frustum, cameraPoint, func);
+        }
+    },
+
+    _findObjectsInFrustum: function(frustum, cameraPoint, func) {
+        if(this.children) {
+            var children = this.children;
+            for(var i=0, l=children.length; i<l; i++) {
+                children[i].findObjectsInFrustum(frustum, cameraPoint, func);
+            }
+        }
+        else {
+            var objs = this.objects;
+            for(var i=0, l=objs.length; i<l; i++) {
+                func(objs[i]);
             }
         }
     },
@@ -586,7 +722,7 @@ sh.Quadtree = sh.Obj.extend({
         if(this.children) {
             for(var i=0; i<this.children.length; i++) {
                 this.children[i].render(program);
-            }     
+            }
         }
     }
 });
@@ -658,6 +794,10 @@ sh.Scene = sh.Obj.extend({
         this._quadtree.findObjects(aabb, func);
     },
 
+    traverse: function(func) {
+        this.root.traverse(func);
+    },
+
     checkCollisions: function(node) {
         node = node || this.root;
 
@@ -677,16 +817,25 @@ sh.Scene = sh.Obj.extend({
                 obj.AABB,
                 function(obj2) {
                     if(obj != obj2 &&
+                       obj2.collisionType != sh.Collision.NONE &&
                        sh.Collision.boxOverlaps(obj.AABB, obj2.AABB)) {
-                        obj.revert();
+                        var b = sh.Collision.resolveBoxes(obj.AABB, obj2.AABB);
+                        obj.translate(b[0], b[1], b[2]);
                     }
                 }
             );
         }
     },
 
+    fillQueue: function(arr, cameraPoint, frustum) {
+        this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
+            if(arr.indexOf(obj) === -1) {
+                arr.push(obj);
+            }
+        });
+    },
+
     update: function(dt) {
-        this.camera.updateMatrices();
         this.updateObject(this.root, dt);
 
         for(var i=0, l=this._behaviors.length; i<l; i++) {
@@ -694,6 +843,7 @@ sh.Scene = sh.Obj.extend({
         }
 
         this.checkCollisions();
+        this.camera.updateMatrices();
     },
 
     updateObject: function(obj, dt, force) {
@@ -945,8 +1095,9 @@ var SceneNode = sh.Obj.extend({
     },
 
     traverse: function(func) {
+        func(this);
+
         for(var i=0, l=this.children.length; i<l; i++) {
-            func(this.children[i]);
             this.children[i].traverse(func);
         }
     },
@@ -1306,13 +1457,13 @@ sh.Camera = sh.SceneNode.extend({
     },
 
     updateMatrices: function() {
+        this.target.updateMatrices();
         mat4.inverse(this.target._realTransform, this.inverseTransform);
     }
 });
 
 sh.Renderer = sh.Obj.extend({
     init: function(w, h) {
-        this.root = new sh.SceneNode();
         this.persMatrix = mat4.create();
         this.width = w;
         this.height = h;
@@ -1329,37 +1480,36 @@ sh.Renderer = sh.Obj.extend({
 
         var _this = this;
 
-        function addObj(obj) {
-            if(_this._objects.indexOf(obj) === -1) {
-                _this._objects.push(obj);
+        // function addObj(obj) {
+        //     if(_this._objects.indexOf(obj) === -1) {
+        //         _this._objects.push(obj);
 
-                for(var i=0, l=obj.children.length; i<l; i++) {
-                    addObj(obj.children[i]);
-                }
-            }
-        }
-        sh.SceneNode.onAdd(addObj);
+        //         for(var i=0, l=obj.children.length; i<l; i++) {
+        //             addObj(obj.children[i]);
+        //         }
+        //     }
+        // }
+        // sh.SceneNode.onAdd(addObj);
 
-        function removeObj(obj) {
-            _this._objects.splice(_this._objects.indexOf(obj), 1);
+        // function removeObj(obj) {
+        //     var idx = _this._objects.indexOf(obj);
+        //     if(idx !== -1) {
+        //         _this._objects.splice(idx, 1);
+        //     }
 
-            if(obj.id) {
-                _this._objectsById[obj.id] = null;
-            }
-
-            for(var i=0, l=obj.children.length; i<l; i++) {
-                removeObj(obj.children[i]);
-            }
-        }
-        sh.SceneNode.onRemove(removeObj);
+        //     for(var i=0, l=obj.children.length; i<l; i++) {
+        //         removeObj(obj.children[i]);
+        //     }
+        // }
+        // sh.SceneNode.onRemove(removeObj);
     },
 
-    iterate: function(func) {
-        var objs = this._objects;
-        for(var i=0, l=objs.length; i<l; i++) {
-            func(objs[i]);
-        }
-    },
+    // iterate: function(func) {
+    //     var objs = this._objects;
+    //     for(var i=0, l=objs.length; i<l; i++) {
+    //         func(objs[i]);
+    //     }
+    // },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
@@ -1393,6 +1543,11 @@ sh.Renderer = sh.Obj.extend({
         mat4.multiply(this.persMatrix,
                       scene.camera.inverseTransform,
                       this._worldTransform);
+
+        this._objects = [];
+        scene.fillQueue(this._objects,
+                        scene.camera.target.pos,
+                        this._worldTransform);
 
         var objs = this._objects;
         var lastProg = null;
@@ -1445,7 +1600,6 @@ sh.Renderer = sh.Obj.extend({
                                 this._worldTransform);
         }
 
-
         for(var i=0, l=objs.length; i<l; i++) {
             if(objs[i].AABB) {
                 objs[i].AABB.render(prog);
@@ -1454,7 +1608,7 @@ sh.Renderer = sh.Obj.extend({
 
         // Render Quadtree (DEBUG)
 
-        scene._quadtree.render(prog);
+        //scene._quadtree.render(prog);
     },
 
     bindAndEnableBuffer: function(program, buf, attrib) {
