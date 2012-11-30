@@ -3,10 +3,14 @@ sh.Scene = sh.Obj.extend({
     init: function(sceneWidth, sceneDepth) {
         this.root = new sh.SceneNode();
         this.root.AABB = null;
+        this.overlayRoot = new sh.SceneNode();
+
         this._objectsById = {};
         this._behaviors = [];
+        this._entities = [];
         this.sceneWidth = sceneWidth;
         this.sceneDepth = sceneDepth;
+        this.useQuadtree = false;
 
         this._quadtree = new sh.Quadtree(
             new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
@@ -19,6 +23,13 @@ sh.Scene = sh.Obj.extend({
         function addObj(obj) {
             if(obj.id) {
                 _this._objectsById[obj.id] = obj;
+            }
+
+            if(obj.isEntity) {
+                var idx = _this._entities.indexOf(obj);
+                if(idx === -1) {
+                    _this._entities.push(obj);
+                }
             }
 
             _this._quadtree.add(obj);
@@ -34,6 +45,13 @@ sh.Scene = sh.Obj.extend({
                 _this._objectsById[obj.id] = null;
             }
 
+            if(obj.isEntity) {
+                var idx = _this._entities.indexOf(obj);
+                if(idx !== -1) {
+                    _this._entities.splice(idx, 1);
+                }
+            }
+
             _this._quadtree.remove(obj);
 
             for(var i=0, l=obj.children.length; i<l; i++) {
@@ -47,12 +65,20 @@ sh.Scene = sh.Obj.extend({
         this.root.addObject(obj);
     },
 
+    add2dObject: function(obj) {
+        this.overlayRoot.addObject(obj);
+    },
+
     getCamera: function() {
         return this.camera;
     },
 
     setCamera: function(camera) {
         this.camera = camera;
+    },
+
+    getOverlay: function() {
+        return this.overlayRoot;
     },
 
     addBehavior: function(obj) {
@@ -101,15 +127,29 @@ sh.Scene = sh.Obj.extend({
     },
 
     fillQueue: function(arr, cameraPoint, frustum) {
-        this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
-            if(arr.indexOf(obj) === -1) {
-                arr.push(obj);
+        if(this.useQuadtree) {
+            this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
+                if(arr.indexOf(obj) === -1) {
+                    arr.push(obj);
+                }
+            });
+
+            var ents = this._entities;
+            for(var i=0; i<ents.length; i++) {
+                // Just go ahead and render all the entities, damnit
+                arr.push(ents[i]);
             }
-        });
+        }
+        else {
+            this.root.traverse(function(obj) {
+                arr.push(obj);
+            });
+        }
     },
 
     update: function(dt) {
         this.updateObject(this.root, dt);
+        this.updateObject(this.overlayRoot, dt);
 
         for(var i=0, l=this._behaviors.length; i<l; i++) {
             this._behaviors[i].update(dt);

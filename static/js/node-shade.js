@@ -156,6 +156,7 @@ sh.Resources = sh.Obj.extend({
     init: function() {
         this.resourceCache = new Array(1000);
         this.readyCallbacks = [];
+        this._gltextures = {};
     },
 
     load: function(urlOrArr) {
@@ -276,6 +277,25 @@ sh.Resources = sh.Obj.extend({
         img.src = url;
     },
 
+    uploadImage: function(img) {
+        if(typeof img === 'string') {
+            img = this.get(img);
+        }
+
+        if(this._gltextures[img.src]) {
+            return this._gltextures[img.src];
+        }
+
+        var tex = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, tex);
+        gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+
+        this._gltextures[img.src] = tex;
+        return tex;
+    },
+
     get: function(url) {
         return this.resourceCache[url];
     },
@@ -306,8 +326,6 @@ sh.Collision = {
 
         mat4.identity(matInverse);
         mat4.translate(matInverse, aabb.getWorldPos());
-        console.log(aabb.getWorldPos());
-        console.log(aabb.extent);
         mat4.rotateZ(matInverse, ent.rot[2]);
         mat4.rotateY(matInverse, ent.rot[1]);
         mat4.rotateX(matInverse, ent.rot[0]);
@@ -389,6 +407,16 @@ sh.Collision = {
 
         return (Math.abs(clip[0]) < clip[3] &&
                 Math.abs(clip[1]) < clip[3] &&
+                0 < clip[2] &&
+                clip[2] < clip[3]);
+    },
+
+    frustumContainsPointWhoTheEffCaresAboutTheYAxis: function(mat, vec) {
+        var clip = vec4.createFrom(vec[0], vec[1], vec[2], 1.0);
+        mat4.multiplyVec4(mat, clip);
+
+        // Don't test the Y. We just want to clip X and Z
+        return (Math.abs(clip[0]) < clip[3] &&
                 0 < clip[2] &&
                 clip[2] < clip[3]);
     },
@@ -568,29 +596,31 @@ sh.Quadtree = sh.Obj.extend({
         var extent = vec3.create();
         vec3.set(aabb.extent, extent);
 
+        var inside = sh.Collision.frustumContainsPointWhoTheEffCaresAboutTheYAxis;
+
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[2] = -extent[2];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
@@ -599,28 +629,28 @@ sh.Quadtree = sh.Obj.extend({
         extent[2] = -extent[2];
 
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[2] = -extent[2];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
@@ -730,10 +760,14 @@ sh.Scene = sh.Obj.extend({
     init: function(sceneWidth, sceneDepth) {
         this.root = new sh.SceneNode();
         this.root.AABB = null;
+        this.overlayRoot = new sh.SceneNode();
+
         this._objectsById = {};
         this._behaviors = [];
+        this._entities = [];
         this.sceneWidth = sceneWidth;
         this.sceneDepth = sceneDepth;
+        this.useQuadtree = false;
 
         this._quadtree = new sh.Quadtree(
             new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
@@ -746,6 +780,13 @@ sh.Scene = sh.Obj.extend({
         function addObj(obj) {
             if(obj.id) {
                 _this._objectsById[obj.id] = obj;
+            }
+
+            if(obj.isEntity) {
+                var idx = _this._entities.indexOf(obj);
+                if(idx === -1) {
+                    _this._entities.push(obj);
+                }
             }
 
             _this._quadtree.add(obj);
@@ -761,6 +802,13 @@ sh.Scene = sh.Obj.extend({
                 _this._objectsById[obj.id] = null;
             }
 
+            if(obj.isEntity) {
+                var idx = _this._entities.indexOf(obj);
+                if(idx !== -1) {
+                    _this._entities.splice(idx, 1);
+                }
+            }
+
             _this._quadtree.remove(obj);
 
             for(var i=0, l=obj.children.length; i<l; i++) {
@@ -774,12 +822,20 @@ sh.Scene = sh.Obj.extend({
         this.root.addObject(obj);
     },
 
+    add2dObject: function(obj) {
+        this.overlayRoot.addObject(obj);
+    },
+
     getCamera: function() {
         return this.camera;
     },
 
     setCamera: function(camera) {
         this.camera = camera;
+    },
+
+    getOverlay: function() {
+        return this.overlayRoot;
     },
 
     addBehavior: function(obj) {
@@ -828,15 +884,29 @@ sh.Scene = sh.Obj.extend({
     },
 
     fillQueue: function(arr, cameraPoint, frustum) {
-        this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
-            if(arr.indexOf(obj) === -1) {
-                arr.push(obj);
+        if(this.useQuadtree) {
+            this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
+                if(arr.indexOf(obj) === -1) {
+                    arr.push(obj);
+                }
+            });
+
+            var ents = this._entities;
+            for(var i=0; i<ents.length; i++) {
+                // Just go ahead and render all the entities, damnit
+                arr.push(ents[i]);
             }
-        });
+        }
+        else {
+            this.root.traverse(function(obj) {
+                arr.push(obj);
+            });
+        }
     },
 
     update: function(dt) {
         this.updateObject(this.root, dt);
+        this.updateObject(this.overlayRoot, dt);
 
         for(var i=0, l=this._behaviors.length; i<l; i++) {
             this._behaviors[i].update(dt);
@@ -953,7 +1023,9 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] = y;
         this.pos[2] = z;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     setRot: function(xOrQuat, y, z) {
@@ -980,25 +1052,33 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] += y;
         this.pos[2] += z;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateX: function(v) {
         this.pos[0] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateY: function(v) {
         this.pos[1] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateZ: function(v) {
         this.pos[2] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     rotate: function(x, y, z) {
@@ -1465,8 +1545,9 @@ sh.Camera = sh.SceneNode.extend({
 sh.Renderer = sh.Obj.extend({
     init: function(w, h) {
         this.persMatrix = mat4.create();
-        this.width = w;
-        this.height = h;
+        this.orthoMatrix = mat4.create();
+        this.resizeFuncs = [];
+        this.resize(w, h);
 
         this._objects = [];
         this._bufferCache = {};
@@ -1479,37 +1560,22 @@ sh.Renderer = sh.Obj.extend({
         gl.enable(gl.CULL_FACE);
 
         var _this = this;
-
-        // function addObj(obj) {
-        //     if(_this._objects.indexOf(obj) === -1) {
-        //         _this._objects.push(obj);
-
-        //         for(var i=0, l=obj.children.length; i<l; i++) {
-        //             addObj(obj.children[i]);
-        //         }
-        //     }
-        // }
-        // sh.SceneNode.onAdd(addObj);
-
-        // function removeObj(obj) {
-        //     var idx = _this._objects.indexOf(obj);
-        //     if(idx !== -1) {
-        //         _this._objects.splice(idx, 1);
-        //     }
-
-        //     for(var i=0, l=obj.children.length; i<l; i++) {
-        //         removeObj(obj.children[i]);
-        //     }
-        // }
-        // sh.SceneNode.onRemove(removeObj);
     },
 
-    // iterate: function(func) {
-    //     var objs = this._objects;
-    //     for(var i=0, l=objs.length; i<l; i++) {
-    //         func(objs[i]);
-    //     }
-    // },
+    resize: function(w, h) {
+        this.width = w;
+        this.height = h;
+
+        mat4.ortho(0, this.width, this.height, 0, -1, 1, this.orthoMatrix);
+
+        this.resizeFuncs.forEach(function(func) {
+            func(w, h);
+        });
+    },
+
+    onResize: function(func) {
+        this.resizeFuncs.push(func);
+    },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
@@ -1592,32 +1658,69 @@ sh.Renderer = sh.Obj.extend({
 
         // Render AABBs (DEBUG)
 
-        var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
-        prog.use();
-        if(prog.worldTransformLoc) {
-            gl.uniformMatrix4fv(prog.worldTransformLoc,
-                                false,
-                                this._worldTransform);
-        }
+        // var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
+        // prog.use();
+        // if(prog.worldTransformLoc) {
+        //     gl.uniformMatrix4fv(prog.worldTransformLoc,
+        //                         false,
+        //                         this._worldTransform);
+        // }
 
-        for(var i=0, l=objs.length; i<l; i++) {
-            if(objs[i].AABB) {
-                objs[i].AABB.render(prog);
-            }
-        }
+        // for(var i=0, l=objs.length; i<l; i++) {
+        //     if(objs[i].AABB) {
+        //         objs[i].AABB.render(prog);
+        //     }
+        // }
 
         // Render Quadtree (DEBUG)
 
         //scene._quadtree.render(prog);
     },
 
-    bindAndEnableBuffer: function(program, buf, attrib) {
+    render2d: function(node) {
+        var lastProg = null;
+        var _this = this;
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        node.traverse(function(obj) {
+            if(!obj._program) {
+                obj._program = _this.loadProgram(obj);
+            }
+
+            var prog = obj._program;
+
+            if(prog) {
+                if(!lastProg || lastProg != prog) {
+                    prog.use();
+                    lastProg = prog;
+
+                    if(prog.worldTransformLoc) {
+                        gl.uniformMatrix4fv(prog.worldTransformLoc,
+                                            false,
+                                            _this.orthoMatrix);
+                    }
+                }
+            }
+
+            gl.uniformMatrix4fv(prog.modelTransformLoc,
+                                false,
+                                obj._realTransform);
+
+            obj.render();
+        });
+
+        gl.disable(gl.BLEND);
+    },
+
+    bindAndEnableBuffer: function(program, buf, attrib, numElements) {
         //if(this._bufferCache[attrib] != buf) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buf);
             var loc = gl.getAttribLocation(program, attrib);
             if(loc != -1) {
                 gl.enableVertexAttribArray(loc);
-                gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+                gl.vertexAttribPointer(loc, numElements || 3, gl.FLOAT, false, 0, 0);
             }
 
             this._bufferCache[attrib] = buf;
@@ -1691,4 +1794,30 @@ sh.Renderer = sh.Obj.extend({
     }
 
     sh.util.decompressSimpleMesh = decompressSimpleMesh;
-})();if(typeof module !== 'undefined') { module.exports = sh; }
+})();
+
+
+// var DEFAULT_ATTRIB_ARRAYS = [
+//   { name: "a_position",
+//     size: 3,
+//     stride: 8,
+//     offset: 0,
+//     decodeOffset: -4095,
+//     decodeScale: 1/8191
+//   },
+//   { name: "a_texcoord",
+//     size: 2,
+//     stride: 8,
+//     offset: 3,
+//     decodeOffset: 0,
+//     decodeScale: 1/1023
+//   },
+//   { name: "a_normal",
+//     size: 3,
+//     stride: 8,
+//     offset: 3,
+//     decodeOffset: -511,
+//     decodeScale: 1/1023
+//   }
+// ];
+if(typeof module !== 'undefined') { module.exports = sh; }

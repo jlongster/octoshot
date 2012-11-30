@@ -60,29 +60,31 @@ sh.Quadtree = sh.Obj.extend({
         var extent = vec3.create();
         vec3.set(aabb.extent, extent);
 
+        var inside = sh.Collision.frustumContainsPointWhoTheEffCaresAboutTheYAxis;
+
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[2] = -extent[2];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
@@ -91,28 +93,28 @@ sh.Quadtree = sh.Obj.extend({
         extent[2] = -extent[2];
 
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[2] = -extent[2];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }
 
         extent[0] = -extent[0];
         vec3.add(pos, extent, v);
-        if(sh.Collision.frustumContainsPoint(frustum, v)) {
+        if(inside(frustum, v)) {
             this._findObjectsInFrustum(frustum, cameraPoint, func);
             return;
         }

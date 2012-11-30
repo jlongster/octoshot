@@ -2,8 +2,9 @@
 sh.Renderer = sh.Obj.extend({
     init: function(w, h) {
         this.persMatrix = mat4.create();
-        this.width = w;
-        this.height = h;
+        this.orthoMatrix = mat4.create();
+        this.resizeFuncs = [];
+        this.resize(w, h);
 
         this._objects = [];
         this._bufferCache = {};
@@ -16,37 +17,22 @@ sh.Renderer = sh.Obj.extend({
         gl.enable(gl.CULL_FACE);
 
         var _this = this;
-
-        // function addObj(obj) {
-        //     if(_this._objects.indexOf(obj) === -1) {
-        //         _this._objects.push(obj);
-
-        //         for(var i=0, l=obj.children.length; i<l; i++) {
-        //             addObj(obj.children[i]);
-        //         }
-        //     }
-        // }
-        // sh.SceneNode.onAdd(addObj);
-
-        // function removeObj(obj) {
-        //     var idx = _this._objects.indexOf(obj);
-        //     if(idx !== -1) {
-        //         _this._objects.splice(idx, 1);
-        //     }
-
-        //     for(var i=0, l=obj.children.length; i<l; i++) {
-        //         removeObj(obj.children[i]);
-        //     }
-        // }
-        // sh.SceneNode.onRemove(removeObj);
     },
 
-    // iterate: function(func) {
-    //     var objs = this._objects;
-    //     for(var i=0, l=objs.length; i<l; i++) {
-    //         func(objs[i]);
-    //     }
-    // },
+    resize: function(w, h) {
+        this.width = w;
+        this.height = h;
+
+        mat4.ortho(0, this.width, this.height, 0, -1, 1, this.orthoMatrix);
+
+        this.resizeFuncs.forEach(function(func) {
+            func(w, h);
+        });
+    },
+
+    onResize: function(func) {
+        this.resizeFuncs.push(func);
+    },
 
     perspective: function(fov, ratio, near, far) {
         mat4.perspective(fov, ratio, near, far, this.persMatrix);
@@ -129,32 +115,69 @@ sh.Renderer = sh.Obj.extend({
 
         // Render AABBs (DEBUG)
 
-        var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
-        prog.use();
-        if(prog.worldTransformLoc) {
-            gl.uniformMatrix4fv(prog.worldTransformLoc,
-                                false,
-                                this._worldTransform);
-        }
+        // var prog = this.loadProgram({ shaders: ['debug.vsh', 'debug.fsh'] });
+        // prog.use();
+        // if(prog.worldTransformLoc) {
+        //     gl.uniformMatrix4fv(prog.worldTransformLoc,
+        //                         false,
+        //                         this._worldTransform);
+        // }
 
-        for(var i=0, l=objs.length; i<l; i++) {
-            if(objs[i].AABB) {
-                objs[i].AABB.render(prog);
-            }
-        }
+        // for(var i=0, l=objs.length; i<l; i++) {
+        //     if(objs[i].AABB) {
+        //         objs[i].AABB.render(prog);
+        //     }
+        // }
 
         // Render Quadtree (DEBUG)
 
         //scene._quadtree.render(prog);
     },
 
-    bindAndEnableBuffer: function(program, buf, attrib) {
+    render2d: function(node) {
+        var lastProg = null;
+        var _this = this;
+
+        gl.enable(gl.BLEND);
+        gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+        node.traverse(function(obj) {
+            if(!obj._program) {
+                obj._program = _this.loadProgram(obj);
+            }
+
+            var prog = obj._program;
+
+            if(prog) {
+                if(!lastProg || lastProg != prog) {
+                    prog.use();
+                    lastProg = prog;
+
+                    if(prog.worldTransformLoc) {
+                        gl.uniformMatrix4fv(prog.worldTransformLoc,
+                                            false,
+                                            _this.orthoMatrix);
+                    }
+                }
+            }
+
+            gl.uniformMatrix4fv(prog.modelTransformLoc,
+                                false,
+                                obj._realTransform);
+
+            obj.render();
+        });
+
+        gl.disable(gl.BLEND);
+    },
+
+    bindAndEnableBuffer: function(program, buf, attrib, numElements) {
         //if(this._bufferCache[attrib] != buf) {
             gl.bindBuffer(gl.ARRAY_BUFFER, buf);
             var loc = gl.getAttribLocation(program, attrib);
             if(loc != -1) {
                 gl.enableVertexAttribArray(loc);
-                gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+                gl.vertexAttribPointer(loc, numElements || 3, gl.FLOAT, false, 0, 0);
             }
 
             this._bufferCache[attrib] = buf;

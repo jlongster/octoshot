@@ -6,8 +6,6 @@ sh.Collision = {
 
         mat4.identity(matInverse);
         mat4.translate(matInverse, aabb.getWorldPos());
-        console.log(aabb.getWorldPos());
-        console.log(aabb.extent);
         mat4.rotateZ(matInverse, ent.rot[2]);
         mat4.rotateY(matInverse, ent.rot[1]);
         mat4.rotateX(matInverse, ent.rot[0]);
@@ -89,6 +87,16 @@ sh.Collision = {
 
         return (Math.abs(clip[0]) < clip[3] &&
                 Math.abs(clip[1]) < clip[3] &&
+                0 < clip[2] &&
+                clip[2] < clip[3]);
+    },
+
+    frustumContainsPointWhoTheEffCaresAboutTheYAxis: function(mat, vec) {
+        var clip = vec4.createFrom(vec[0], vec[1], vec[2], 1.0);
+        mat4.multiplyVec4(mat, clip);
+
+        // Don't test the Y. We just want to clip X and Z
+        return (Math.abs(clip[0]) < clip[3] &&
                 0 < clip[2] &&
                 clip[2] < clip[3]);
     },

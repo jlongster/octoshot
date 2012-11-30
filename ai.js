@@ -83,10 +83,10 @@ function runAI() {
         from: 0,
         dt: Math.random() / 20,
         sequenceId: id++,
-        mouseX: 0,
+        mouseX: -1,
         mouseY: 0,
         mouseDown: 0,
-        left: 1,
+        left: 0,
         right: 0,
         up: 0,
         down: 0

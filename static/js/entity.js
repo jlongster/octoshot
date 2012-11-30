@@ -10,6 +10,9 @@
             // The server does the collision for us (whee)
             this.collisionType = Collision.NONE;
 
+            // A hack to optimize entity collection in the scene graph
+            this.isEntity = true;
+
             this.sequenceId = 0;
             this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
 
@@ -56,25 +59,15 @@
             // Run the entity's movement on the server-side.
             var dt = state.dt;
 
-            this.rotateX(state.mouseY * -Math.PI / 6.0 * dt);
-            this.rotateY(state.mouseX * -Math.PI / 6.0 * dt);
+            this.rotateX(state.mouseY * -Math.PI / 12.0 * dt);
+            this.rotateY(state.mouseX * -Math.PI / 12.0 * dt);
 
             if(state.left) {
-                if(state.mouseDown) {
-                    this.moveLeft(this.speed * dt);
-                }
-                else {
-                    this.rotateY(Math.PI / 2 * dt);
-                }
+                this.moveLeft(this.speed * dt);
             }
 
             if(state.right) {
-                if(state.mouseDown) {
-                    this.moveRight(this.speed * dt);
-                }
-                else {
-                    this.rotateY(-Math.PI / 2 * dt);
-                }
+                this.moveRight(this.speed * dt);
             }
 
             if(state.up) {

@@ -84,46 +84,54 @@ var ServerConnection = sh.Obj.extend({
     },
 
     sendClick: function(entIds, entInterps, seqIds, v1, v2) {
-        this.stream.write(packets.clickPacket({
-            type: packets.clickPacket.typeId,
-            from: this.userId,
-            entIds: entIds,
-            entInterps: entInterps,
-            seqIds: seqIds,
-            x: v1[0],
-            y: v1[1],
-            z: v1[2],
-            x2: v2[0],
-            y2: v2[1],
-            z2: v2[2]
-        }));
+        if(this.stream) {
+            this.stream.write(packets.clickPacket({
+                type: packets.clickPacket.typeId,
+                from: this.userId,
+                entIds: entIds,
+                entInterps: entInterps,
+                seqIds: seqIds,
+                x: v1[0],
+                y: v1[1],
+                z: v1[2],
+                x2: v2[0],
+                y2: v2[1],
+                z2: v2[2]
+            }));
+        }
     },
 
     sendMessage: function(msg) {
-        this.stream.write(packets.messagePacket({
-            type: packets.messagePacket.typeId,
-            from: this.userId,
-            name: this.username,
-            message: msg
-        }));
+        if(this.stream) {
+            this.stream.write(packets.messagePacket({
+                type: packets.messagePacket.typeId,
+                from: this.userId,
+                name: this.username,
+                message: msg
+            }));
+        }
     },
 
     sendNameChange: function(name) {
-        this.stream.write(packets.nameChangePacket({
-            type: packets.nameChangePacket.typeId,
-            from: this.userId,
-            name: name
-        }));
+        if(this.stream) {
+            this.stream.write(packets.nameChangePacket({
+                type: packets.nameChangePacket.typeId,
+                from: this.userId,
+                name: name
+            }));
+        }
     },
 
     command: function(method, args) {
         args = args || null;
 
-        this.stream.write(packets.cmdPacket({
-            type: packets.cmdPacket.typeId,
-            from: this.userId,
-            method: method,
-            args: args
-        }));        
+        if(this.stream) {
+            this.stream.write(packets.cmdPacket({
+                type: packets.cmdPacket.typeId,
+                from: this.userId,
+                method: method,
+                args: args
+            }));
+        }
     }
 });

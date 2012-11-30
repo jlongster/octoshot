@@ -31,6 +31,11 @@
 
             var moved = false;
             var mouse = input.getMouseMoved();
+
+            if(!renderer.fullscreen && !input.isMouseDown()) {
+                mouse = [0, 0];
+            }
+
             var diffPos = vec3.create();
             vec3.set(this.pos, diffPos);
             var diffRot = vec3.create();
@@ -45,8 +50,8 @@
 
             if(mouse[0] !== 0 || mouse[1] !== 0) {
                 moved = true;
-                this.rotateX(mouse[1] * -Math.PI / 6.0 * dt);
-                this.rotateY(mouse[0] * -Math.PI / 6.0 * dt);
+                this.rotateX(mouse[1] * -Math.PI / 12.0 * dt);
+                this.rotateY(mouse[0] * -Math.PI / 12.0 * dt);
             }
 
             state.mouseX = mouse[0];
@@ -55,25 +60,13 @@
 
             if((input.isDown('LEFT') || input.isDown('a'))) {
                 moved = true;
-                if(input.isMouseDown()) {
-                    this.moveLeft(this.speed * dt);
-                }
-                else {
-                    this.rotateY(Math.PI / 2 * dt);
-                }
-
+                this.moveLeft(this.speed * dt);
                 state.left = 1;
             }
 
             if((input.isDown('RIGHT') || input.isDown('d'))) {
                 moved = true;
-                if(input.isMouseDown()) {
-                    this.moveRight(this.speed * dt);
-                }
-                else {
-                    this.rotateY(-Math.PI / 2 * dt);
-                }
-
+                this.moveRight(this.speed * dt);
                 state.right = 1;
             }
 
@@ -103,8 +96,12 @@
                 server.sendInput(state);
             }
 
-            if(input.isMouseClicked()) {
-                var coord = input.getCurMouse();
+            if((renderer.fullscreen && input.isMouseClicked()) ||
+               (!renderer.fullscreen && input.isPressed('space'))) {
+                var coord = [renderer.width / 2.0,
+                             renderer.height / 2.0];
+
+                resources.get('sounds/laser.wav').play();
 
                 // Evidently, we need to flip the y value
                 var screenPos = vec3.createFrom(coord[0],
@@ -132,7 +129,7 @@
                 // DEBUG
                 // var line = new sh.Line({ v1: v1,
                 //                          v2: v2 });
-                // renderer.addObject(line);
+                // scene.addObject(line);
 
                 var entIds = [];
                 var entInterps = [];
@@ -146,7 +143,6 @@
                     }
                 });
 
-                console.log('shooting');
                 server.sendClick(entIds, entInterps, seqIds, v1, v2);
             }
         },

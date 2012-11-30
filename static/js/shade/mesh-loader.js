@@ -67,3 +67,28 @@
 
     sh.util.decompressSimpleMesh = decompressSimpleMesh;
 })();
+
+
+// var DEFAULT_ATTRIB_ARRAYS = [
+//   { name: "a_position",
+//     size: 3,
+//     stride: 8,
+//     offset: 0,
+//     decodeOffset: -4095,
+//     decodeScale: 1/8191
+//   },
+//   { name: "a_texcoord",
+//     size: 2,
+//     stride: 8,
+//     offset: 3,
+//     decodeOffset: 0,
+//     decodeScale: 1/1023
+//   },
+//   { name: "a_normal",
+//     size: 3,
+//     stride: 8,
+//     offset: 3,
+//     decodeOffset: -511,
+//     decodeScale: 1/1023
+//   }
+// ];

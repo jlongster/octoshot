@@ -94,7 +94,9 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] = y;
         this.pos[2] = z;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     setRot: function(xOrQuat, y, z) {
@@ -121,25 +123,33 @@ var SceneNode = sh.Obj.extend({
         this.pos[1] += y;
         this.pos[2] += z;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateX: function(v) {
         this.pos[0] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateY: function(v) {
         this.pos[1] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     translateZ: function(v) {
         this.pos[2] += v;
         this._dirty = true;
-        this.AABB._dirty = true;
+        if(this.AABB) {
+            this.AABB._dirty = true;
+        }
     },
 
     rotate: function(x, y, z) {

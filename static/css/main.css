@@ -28,115 +28,48 @@ canvas {
     width: 100%;
     height: 100%;
     display: block;
-    margin: 0 auto;
+    margin: 0;
 
     image-rendering: optimizeSpeed;
     image-rendering: -moz-crisp-edges;
     image-rendering: -webkit-optimize-contrast;
 }
 
-.debug {
+:-moz-full-screen,
+:-webkit-full-screen {
+    width: 100%;
+    height: 100%;
+}
+
+#intro {
+    background-color: white;
+    color: black;
+}
+
+#intro h1 {
+    font-size: 3em;
+    text-align:  center;
+    color: black;
+}
+
+#intro, #instructions, #ingame {
+    display: none;
+}
+
+body.intro #intro,
+body.instructions #instructions,
+body.ingame #ingame {
+    display: block;
+}
+
+#ingame .initialOverlay {
     position: absolute;
     top: 0;
     left: 0;
-    padding: .5em;
-    background-color: #333333;
-    color: #d0d0d0;
-    font-size: 16px;
-}
-
-#chat {
-    position: absolute;
-    top: 0;
     right: 0;
-    width: 50%;
-    height: 100%;
-    background-color: black;
-    border: 1px solid grey;
-    font-size: 14px;
-    color: white;
-
-    transition: right .5s;
-}
-
-#chat.closed {
-    right: -40%;
-}
-
-#messages {
-    height: calc(100% - 45px);
-    overflow: auto;
-}
-
-#messages span.name {
-    color: #ccffcc;
-    margin-right: .25em;
-    font-style: italic;
-}
-
-#messages .server {
-    color: #afd3d4;
-}
-
-#messages .me {
-    font-style: italic;
-    color: #9999dd;
-}
-
-#messages > div {
-    font-family: Monaco, monospace;
-    font-size: 13px;
-}
-
-#messages img {
-    max-height: 200px;
-}
-
-#messages a {
-    color: #28b8dc;
-}
-
-.type {
-    width: 100%;
-    margin: 0;
-    border-top: 1px solid grey;
-    background-color: black;
-}
-
-.type .inner {
-    padding: .5em;
-    text-align: center;
-}
-
-.type input {
-    margin: 0;
-    padding: .5em;
-    font-family: Monaco, monospace;
-    font-size: 13px;
-    width: 98%;
+    bottom: 0;
     background-color: black;
     color: white;
-    border: 1px solid black;
-}
-
-#notification {
-    position: absolute;
-    top: 0;
-    left: 25%;
-    width: 50%;
-    text-align: center;
-    color: white;
-    padding: 1em;
-    font-size: 20px;
-    opacity: 0;
-    z-index: 3;
-
-    -webkit-transition: opacity 10s;
-    -moz-transition: opacity 10s;
-}
-
-#notification.open {
-    -webkit-transition: opacity 1s;
-    -moz-transition: opacity 1s;
-    opacity: 1;
+    opacity: .75;
+    display: none;
 }

@@ -5,21 +5,38 @@
     <title>Github Game Off 2012</title>
 
     <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <link rel="stylesheet" type="text/css" href="css/ui.css" />
     <style>
     </style>
   </head>
   <body>
-    <h1 id="loading">Loading...</h1>
-    <canvas id="canvas"></canvas>
+    <div id="intro">
+      <h1>Octoshot</h1>
+      <button class="play">Play now!</button>
+    </div>
 
-    <div id="notification"></div>
+    <div id="instructions">
+      <h1>Instructions</h1>
+    </div>
 
-    <div id="chat" class="closed">
-      <div id="messages"></div>
-      <div class="type">
-        <div class="inner">
-          <input id="message-input" type="text" name="message" autocomplete="off" />
+    <div id="ingame">
+      <canvas id="canvas"></canvas>
+
+      <div id="notification"></div>
+
+      <div id="chat" class="closed">
+        <div id="messages"></div>
+        <div class="type">
+          <div class="inner">
+            <input id="message-input" type="text" name="message" autocomplete="off" />
+          </div>
         </div>
+      </div>
+
+      <div class="initialOverlay">
+        You should go fullscreen
+        <button class="start">Start</button>
+        <button class="no">No</button>
       </div>
     </div>
 
@@ -37,12 +54,14 @@
     <script src="js/shade/mesh.js"></script>
     <script src="js/shade/cube.js"></script>
     <script src="js/shade/line.js"></script>
+    <script src="js/shade/square.js"></script>
     <script src="js/shade/camera.js"></script>
     <script src="js/shade/renderer.js"></script>
     <script src="js/shade/mesh-loader.js"></script>
     <script src="js/shade/collision.js"></script>
     <script src="js/shade/quadtree.js"></script>
     <script src="js/shade/aabb.js"></script>
+    <script src="js/shade/sound.js"></script>
 
     <script src="js/zepto.min.js"></script>
     <script src="js/lib/binary.js"></script>

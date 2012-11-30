@@ -24,30 +24,6 @@ var canvas = document.getElementById('canvas');
 canvas.width = w;
 canvas.height = h;
 
-var DEFAULT_ATTRIB_ARRAYS = [
-  { name: "a_position",
-    size: 3,
-    stride: 8,
-    offset: 0,
-    decodeOffset: -4095,
-    decodeScale: 1/8191
-  },
-  { name: "a_texcoord",
-    size: 2,
-    stride: 8,
-    offset: 3,
-    decodeOffset: 0,
-    decodeScale: 1/1023
-  },
-  { name: "a_normal",
-    size: 3,
-    stride: 8,
-    offset: 3,
-    decodeOffset: -511,
-    decodeScale: 1/1023
-  }
-];
-
 function convertToWireframe(indices) {
     var arr = new Uint16Array(indices.length / 3 * 6);
     var idx = 0;
@@ -76,10 +52,11 @@ function notify(msg) {
 
 function init() {
     renderer = new sh.Renderer(w, h);
-    scene = new sh.Scene(255 * 4, 255 * 4);
+    scene = new sh.Scene(255, 255);
     server = new ServerConnection();
 
     createLevel(scene);
+    createOverlay(scene);
 
     player = new Player();
     scene.addObject(player);
@@ -91,18 +68,21 @@ function init() {
                               scene.sceneDepth);
     terrain.create();
     scene.addObject(terrain);
-    
-    document.getElementById('loading').style.display = 'none';
+
+    //document.getElementById('loading').style.display = 'none';
 
     serverEvents.init();
     messages.init();
+    window.onresize = resize;
 
+    onGameStart();
     heartbeat();
 
     notify("Press T to bring up chat, ESC to close it");
 }
 
 var last = Date.now();
+var stopped = false;
 function heartbeat() {
     var now = Date.now();
     var dt = Math.min((now - last) / 1000., .1);
@@ -113,34 +93,155 @@ function heartbeat() {
     gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
     renderer.render(scene);
-
-    last = now;
-    requestAnimFrame(heartbeat);
+    renderer.render2d(scene.getOverlay());
 
     input.reset();
-    stats.update();
+
+    if(stats) {
+        stats.update();
+    }
+
+    if(!stopped) {
+        last = now;
+        requestAnimFrame(heartbeat);
+    }
 }
 
-$(function() {
-    stats = new Stats();
-    //stats.setMode(1);
-    stats.domElement.style.position = 'absolute';
-    stats.domElement.style.right = '0px';
-    stats.domElement.style.top = '0px';
-    document.body.appendChild(stats.domElement);
+function resize() {
+    var w = window.innerWidth;
+    var h = window.innerHeight;
 
+    canvas.width = w;
+    canvas.height = h;
+
+    // !@$#!@$#$$!@#!
+    gl.viewport(0, 0, canvas.width, canvas.height);
+
+    renderer.resize(w, h);
+    renderer.perspective(45, w / h, 1.0, 5000.0);
+}
+
+// Various screens for the game
+
+function initPage() {
+    $('#intro button.play').click(function() {
+        showInGame();
+    });
+
+    $('#ingame button.start').click(function() {
+        actuallyStart();
+
+        var el = $('#ingame')[0];
+        el.requestFullscreen = el.requestFullscreen ||
+            el.mozRequestFullscreen ||
+            el.mozRequestFullScreen || // Older API upper case 'S'.
+            el.webkitRequestFullscreen;
+
+        el.requestFullscreen();
+    });
+
+    $('#ingame button.no').click(function() {
+        actuallyStart();
+    });
+
+    function actuallyStart() {
+        var el = $('#ingame')[0];
+        $('.initialOverlay', el).hide();
+        input.activate();
+    }
+
+    function onFullscreenChange() {
+        var el = document.webkitFullscreenElement ||
+            document.mozFullscreenElement ||
+            document.mozFullScreenElement;
+
+        if(el) {
+            el.requestPointerLock = el.requestPointerLock ||
+                el.mozRequestPointerLock ||
+                el.webkitRequestPointerLock;
+            el.requestPointerLock();
+            renderer.fullscreen = true;
+        }
+        else {
+            renderer.fullscreen = false;
+        }
+
+        resize();
+    }
+
+    function onPointerLockChange() {
+        if (document.mozPointerLockElement ||
+            document.webkitPointerLockElement) {
+            console.log("Pointer Lock was successful.");
+        } else {
+            console.log("Pointer Lock was lost.");
+        }
+    }
+
+    function onPointerLockError() {
+        alert('error locking');
+    }
+
+    document.addEventListener('fullscreenchange', onFullscreenChange, false);
+    document.addEventListener('mozfullscreenchange', onFullscreenChange, false);
+    document.addEventListener('webkitfullscreenchange', onFullscreenChange, false);
+
+    document.addEventListener('pointerlockchange', onPointerLockChange, false);
+    document.addEventListener('mozpointerlockchange', onPointerLockChange, false);
+    document.addEventListener('webkitpointerlockchange', onPointerLockChange, false);
+
+    document.addEventListener('pointerlockerror', onPointerLockError, false);
+    document.addEventListener('mozpointerlockerror', onPointerLockError, false);
+    document.addEventListener('webkitpointerlockerror', onPointerLockError, false);
+
+    showIntro();
+}
+
+function showIntro() {
+    $('body')[0].className = 'intro';
+    stopped = true;
+    input.deactivate();
+}
+
+function showInstructions() {
+    $('body')[0].className = 'instructions';
+    stopped = true;
+    input.deactivate();
+}
+
+function showInGame() {
+    $('body')[0].className = 'ingame';
+    stopped = false;
     gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
 
-    // resources.load('resources/ben.mesh', DEFAULT_ATTRIB_ARRAYS);
-    // resources.load('resources/teapot.mesh', DEFAULT_ATTRIB_ARRAYS);
+    // stats = new Stats();
+    // //stats.setMode(1);
+    // stats.domElement.style.position = 'absolute';
+    // stats.domElement.style.right = '0px';
+    // stats.domElement.style.top = '0px';
+    // document.body.appendChild(stats.domElement);
+
     resources.load([
         'shaders/default.fsh',
         'shaders/default.vsh',
         'shaders/debug.fsh',
         'shaders/debug.vsh',
+        'shaders/ui.fsh',
+        'shaders/ui.vsh',
         'shaders/terrain.fsh',
         'shaders/terrain.vsh',
-        'img/grass.jpg'
+        'img/test.png',
+        'img/crosshair.png',
+        'img/grass.jpg',
+        'sounds/laser.wav'
     ]);
+
     resources.onReady(init);
-})
+}
+
+function onGameStart() {
+    $('#ingame .initialOverlay').hide();
+    input.activate();
+}
+
+$(initPage);
