@@ -14,15 +14,24 @@
             this.isEntity = true;
 
             this.sequenceId = 0;
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            this.goodPos = vec3.create();
+            this.goodRot = vec3.create();
+            this.restart(0);
 
-            // Initially turn them around to face the positive Z axis.
-            if(!opts.rot) {
-                this.rotateY(Math.PI);
+            // Since by default you are respawned, make sure to re-set
+            // the pos and rot
+            if(opts.pos) {
+                var p = opts.pos;
+                this.setPos(p[0], p[1], p[2]);
+            }
+
+            if(opts.rot) {
+                var r = opts.rot;
+                this.setRot(r[0], r[1], r[2]);
             }
             
             if(!opts.scale) {
-                this.setScale(25, 25, 25);
+                this.setScale(10, 10, 10);
             }
 
             this.color = opts.color || vec3.createFrom(0, 0, 1);
@@ -62,17 +71,7 @@
             vec3.scale(this.scale, .5, halfScale);
             this.setAABB([0, 0, 0], halfScale);
 
-            this.goodPos = vec3.create(this.pos);
-            this.goodRot = vec3.create(this.rot);
-
-            this.startPos = null;
-            this.startRot = null;
-            this.targetPos = null;
-            this.targetRot = null;
             this.serverFreq = .1;
-            this.interp = 1.0;
-
-            this.packetBuffer = [];
             this.history = [];
             this.historyPos = vec3.create();
             this.historyRot = vec3.create();
@@ -81,6 +80,16 @@
                 Cube.mesh = new CubeMesh();
                 Cube.mesh.create();
             }
+        },
+        
+        setPos: function(x, y, z) {
+            this.parent(x, y, z);
+            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+        },
+        
+        translate: function(x ,y, z) {
+            this.parent(x, y, z);
+            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
         },
 
         handleServerInput: function(state) {
@@ -105,8 +114,6 @@
             if(state.down) {
                 this.moveBack(this.speed * dt);
             }
-
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
         },
 
         snapshot: function() {
@@ -201,22 +208,22 @@
             // var sceneY = scene.sceneDepth;
             var sceneX = 255 * 4;
             var sceneY = 255 * 4;
-
+            
             switch(spawnPoint) {
             case 0:
-                this.setPos(0, 0, 0);
+                this.setPos(50, 0, 50);
                 this.setRot(0, Math.PI, 0);
                 break;
             case 1:
-                this.setPos(sceneX, 0, 0);
+                this.setPos(sceneX - 50, 0, 50);
                 this.setRot(0, Math.PI, 0);
                 break;
             case 2:
-                this.setPos(0, 0, sceneY);
+                this.setPos(50, 0, sceneY - 50);
                 this.setRot(0, 0, 0);
                 break;
             case 3:
-                this.setPos(sceneX, 0, sceneY);
+                this.setPos(sceneX - 50, 0, sceneY - 50);
                 this.setRot(0, 0, 0);
                 break;
             }

@@ -18,9 +18,9 @@ var SceneNode = sh.Obj.extend({
             }
         }
 
-        this.pos = pos || vec3.create([0, 0, 0]);
-        this.rot = rot || vec3.create([0, 0, 0]);
-        this.scale = scale || vec3.create([1, 1, 1]);
+        this.pos = (pos && vec3.create(pos)) || vec3.createFrom(0, 0, 0);
+        this.rot = (rot && vec3.create(rot)) || vec3.createFrom(0, 0, 0);
+        this.scale = (scale && vec3.create(scale)) || vec3.createFrom(1, 1, 1);
         this.transform = mat4.create();
         this.worldTransform = mat4.create();
         this._program = null;

@@ -7,5 +7,5 @@ void main() {
     vec3 nNormal = normalize(normal);
     float diffuse = dot(nNormal, light);
 
-    gl_FragColor = vec4(color, 1.0) * diffuse;
+    gl_FragColor = vec4(color, 1.0);
 }

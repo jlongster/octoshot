@@ -12,7 +12,6 @@
             this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
 
             this.stateBuffer = [];
-            this.isGod = true;
         },
 
         update: function(dt) {
@@ -20,10 +19,6 @@
         },
 
         render: function() {
-        },
-
-        toggleGod: function() {
-            this.isGod = !this.isGod;
         },
 
         handleClientInput: function(dt) {
@@ -82,10 +77,6 @@
                 state.down = 1;
             }
 
-            if(!this.isGod) {
-                this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
-            }
-
             if(moved) {
                 vec3.subtract(this.pos, diffPos, diffPos);
                 vec3.subtract(this.rot, diffRot, diffRot);
@@ -97,7 +88,7 @@
             }
 
             if((renderer.fullscreen && input.isMouseClicked()) ||
-               (!renderer.fullscreen && input.isPressed('space'))) {
+               (!renderer.fullscreen && input.isPressed('e'))) {
                 var coord = [renderer.width / 2.0,
                              renderer.height / 2.0];
 

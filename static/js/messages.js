@@ -13,17 +13,16 @@
         cmd = parts[0];
         var args = parts.slice(1).join(' ');
 
-        if(cmd == 'god') {
-            player.toggleGod();
-            printMessage('God mode is ' + (player.isGod ? 'on' : 'off'),
-                         '',
-                         function(msg, name) {
-                             return '<div>' + msg + '</div>';
-                         });
-        }
-        else {
-            server.command(cmd, args);
-        }
+        // if(cmd == 'god') {
+        //     player.toggleGod();
+        //     printMessage('God mode is ' + (player.isGod ? 'on' : 'off'),
+        //                  '',
+        //                  function(msg, name) {
+        //                      return '<div>' + msg + '</div>';
+        //                  });
+        // }
+
+        server.command(cmd, args);
         return true;
     }
 

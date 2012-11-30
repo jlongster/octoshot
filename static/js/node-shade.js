@@ -330,13 +330,11 @@ sh.Resources = sh.Obj.extend({
             _this.onFailure(url);
         };
 
-        console.log('loading ' + url);
         img.src = url;
     },
 
     uploadImage: function(img) {
         if(typeof img === 'string') {
-            console.log(img);
             img = this.get(img);
         }
 
@@ -943,6 +941,11 @@ sh.Scene = sh.Obj.extend({
 
     fillQueue: function(arr, cameraPoint, frustum) {
         if(this.useQuadtree) {
+            var sky = this.getObject('sky');
+            if(sky) {
+                arr.push(sky);
+            }
+
             this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
                 if(arr.indexOf(obj) === -1) {
                     arr.push(obj);
@@ -1007,9 +1010,9 @@ var SceneNode = sh.Obj.extend({
             }
         }
 
-        this.pos = pos || vec3.create([0, 0, 0]);
-        this.rot = rot || vec3.create([0, 0, 0]);
-        this.scale = scale || vec3.create([1, 1, 1]);
+        this.pos = (pos && vec3.create(pos)) || vec3.createFrom(0, 0, 0);
+        this.rot = (rot && vec3.create(rot)) || vec3.createFrom(0, 0, 0);
+        this.scale = (scale && vec3.create(scale)) || vec3.createFrom(1, 1, 1);
         this.transform = mat4.create();
         this.worldTransform = mat4.create();
         this._program = null;

@@ -175,13 +175,11 @@ sh.Resources = sh.Obj.extend({
             _this.onFailure(url);
         };
 
-        console.log('loading ' + url);
         img.src = url;
     },
 
     uploadImage: function(img) {
         if(typeof img === 'string') {
-            console.log(img);
             img = this.get(img);
         }
 

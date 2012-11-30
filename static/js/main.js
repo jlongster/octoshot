@@ -73,6 +73,7 @@ function init() {
     sky.id = 'sky';
     sky.backface = true;
     sky.noZbuffer = true;
+    sky.setMaterial(['sky.vsh', 'sky.fsh']);
     scene.addObject(sky);
 
     var terrain = new Terrain(null, null, null,
@@ -249,7 +250,6 @@ function showInGame() {
         'img/octo.png',
         'img/crosshair.png',
         'img/grass.jpg',
-        'img/sky.png',
         'sounds/laser.wav'
     ]);
 
