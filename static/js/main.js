@@ -90,8 +90,6 @@ function init() {
 
     onGameStart();
     heartbeat();
-
-    notify("Press T to bring up chat, ESC to close it");
 }
 
 var last = Date.now();
@@ -161,6 +159,7 @@ function initPage() {
         var el = $('#ingame')[0];
         $('.initialOverlay', el).hide();
         input.activate();
+        notify("Press T to bring up chat, ESC to close it");
     }
 
     function onFullscreenChange() {
@@ -207,7 +206,7 @@ function initPage() {
     document.addEventListener('mozpointerlockerror', onPointerLockError, false);
     document.addEventListener('webkitpointerlockerror', onPointerLockError, false);
 
-    showInGame();
+    showIntro();
 }
 
 function showIntro() {
@@ -257,8 +256,7 @@ function showInGame() {
 }
 
 function onGameStart() {
-    $('#ingame .initialOverlay').hide();
-    input.activate();
+    $('#ingame .initialOverlay').show();
 }
 
 $(initPage);
