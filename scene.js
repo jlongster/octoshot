@@ -19,7 +19,7 @@ module.exports = Scene.extend({
                 return;
             }
 
-            if(ent !== user.entity) {
+            if(ent !== user.entity && entStates[ent.id]) {
                 ent.rewind(entStates[ent.id].seq,
                            entStates[ent.id].interp);
 
