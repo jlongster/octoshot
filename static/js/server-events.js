@@ -1,8 +1,10 @@
 (function() {
     function init() {
         server.on('join', function(obj) {
-            var ent = new Entity({ pos: [obj.x, obj.y, obj.z],
-                                   rot: [obj.rotX, obj.rotY, obj.rotZ] });
+            var ent = new Entity({
+                pos: [obj.x, obj.y, obj.z],
+                rot: [obj.rotX, obj.rotY, obj.rotZ],
+                color: [Math.random(), Math.random(), Math.random()] });
             ent.id = 'anon' + obj.id;
             scene.addObject(ent);
         });

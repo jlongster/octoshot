@@ -130,6 +130,8 @@ sh.Program = sh.Obj.extend({
         this.worldTransformLoc = this.getUniformLocation("worldTransform");
         this.modelTransformLoc = this.getUniformLocation("modelTransform");
         this.normalLoc = this.getUniformLocation("normalMatrix");
+        this.colorLoc = this.getUniformLocation("matColor");
+        this.textureScaleLoc = this.getUniformLocation("textureScale");
     },
 
     getUniformLocation: function(uniform) {
@@ -188,6 +190,9 @@ sh.Resources = sh.Obj.extend({
             else if(ext == 'fsh') {
                 loader = this.loadFragmentShader;
             }
+            else if(ext == 'ogg' || ext == 'mp3' || ext == 'wav') {
+                loader = this.loadSound;
+            }
             else {
                 loader = this.loadImage;
             }
@@ -211,26 +216,36 @@ sh.Resources = sh.Obj.extend({
         console.log('failed to load resource: ' + url);
     },
 
-    loadText: function(url, then) {
+    xhrGet: function(url, then, responseField, responseType) {
         var req = new XMLHttpRequest();
-        var _this = this;
-
-        req.onload = function() {
-            if(req.status === 200 || req.status === 0) {
-                then(req.responseText);
-            }
-        };
-
-        req.onerror = function(err) {
-            _this.onFailure(url);
-        };
-
         req.open('GET', url, true);
-        req.send(null);
+
+        req.addEventListener('load', function() {
+            if(req.status === 200 || req.status === 0) {
+                then(req[responseField || 'responseText']);
+            }
+            else {
+                _this.onFailure(url);
+            }
+        }, false);
+
+        req.addEventListener('error', function(err) {
+            _this.onFailure(url);
+        }, false);
+
+        if(responseType) {
+            req.responseType = responseType;
+        }
+
+        req.send();
+    },
+
+    xhrGetBuffer: function(url, then) {
+        this.xhrGet(url, then, 'response', 'arraybuffer');
     },
 
     loadMesh: function(url, attribArrays) {
-        this.loadText(url, function(src) {
+        this.xhrGet(url, function(src) {
             var mesh = sh.util.decompressSimpleMesh(src, attribArrays);
             _this.onLoaded(url, mesh);
         });
@@ -247,7 +262,7 @@ sh.Resources = sh.Obj.extend({
     _loadShader: function(url, type) {
         var _this = this;
 
-        this.loadText(url, function(src) {
+        this.xhrGet(url, function(src) {
             var shader = gl.createShader(type);
             gl.shaderSource(shader, src);
             gl.compileShader(shader);
@@ -263,6 +278,47 @@ sh.Resources = sh.Obj.extend({
         });
     },
 
+    loadSound: function(url) {
+        var _this = this;
+
+        // Argh audio, the scourge of the earth ye
+        if('webkitAudioContext' in window) {
+            this.xhrGetBuffer(url, function(buffer) {
+                _this.onLoaded(url, new sh.WebAudioSound(buffer));
+            });
+        }
+        else {
+            // I will plunder ye village and burn ye homes to da ground
+            var audio = new Audio();
+            var sound;
+
+            if(audio.mozSetup) {
+                sound = new sh.AudioDataSound();
+
+                audio.addEventListener('MozAudioAvailable', function(e) {
+                    sound.load(e.frameBuffer);
+                }, false);
+
+                audio.addEventListener('loadedmetadata', function(e) {
+                    sound.setup(audio.mozChannels,
+                                audio.mozSampleRate,
+                                audio.mozFrameBufferLength);
+                }, false);
+            }
+            else {
+                sound = new sh.Sound(audio);
+            }
+
+            audio.muted = true;
+            audio.src = url;
+            audio.play();
+            
+            // I can't find an event that loads when the sound is
+            // fully completed, so just go ahead
+            _this.onLoaded(url, sound);
+        }
+    },
+
     loadImage: function(url) {
         var img = new Image();
         var _this = this;
@@ -274,11 +330,13 @@ sh.Resources = sh.Obj.extend({
             _this.onFailure(url);
         };
 
+        console.log('loading ' + url);
         img.src = url;
     },
 
     uploadImage: function(img) {
         if(typeof img === 'string') {
+            console.log(img);
             img = this.get(img);
         }
 
@@ -767,7 +825,7 @@ sh.Scene = sh.Obj.extend({
         this._entities = [];
         this.sceneWidth = sceneWidth;
         this.sceneDepth = sceneDepth;
-        this.useQuadtree = false;
+        this.useQuadtree = true;
 
         this._quadtree = new sh.Quadtree(
             new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
@@ -894,7 +952,9 @@ sh.Scene = sh.Obj.extend({
             var ents = this._entities;
             for(var i=0; i<ents.length; i++) {
                 // Just go ahead and render all the entities, damnit
-                arr.push(ents[i]);
+                ents[i].traverse(function(obj) {
+                    arr.push(obj);
+                });
             }
         }
         else {
@@ -954,7 +1014,7 @@ var SceneNode = sh.Obj.extend({
         this.worldTransform = mat4.create();
         this._program = null;
         this.setAABB();
-        this.collisionType = sh.Collision.STATIC;
+        this.collisionType = sh.Collision.NONE;
 
         this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;
@@ -1440,6 +1500,51 @@ sh.CubeMesh = sh.Obj.extend({
         ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+        // Texture coords
+
+        this.texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+
+        var coords = [
+            // front
+            1, 1/6,
+            0, 1/6,
+            0, 0,
+            1, 0,
+ 
+            // left
+            1, 2/6,
+            0, 2/6,
+            0, 1/6,
+            1, 1/6,
+
+            // right
+            1, 3/6,
+            0, 3/6,
+            0, 2/6,
+            1, 2/6,
+
+            // back
+            1, 4/6,
+            0, 4/6,
+            0, 3/6,
+            1, 3/6,
+
+            // top
+            1, 5/6,
+            0, 5/6,
+            0, 4/6,
+            1, 4/6,
+
+            // bottom
+            1, 1,
+            0, 1,
+            0, 5/6,
+            1, 5/6
+        ];
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
         
         // Indices
 
@@ -1490,6 +1595,7 @@ sh.CubeMesh = sh.Obj.extend({
     render: function(program, wireframe) {
         renderer.bindAndEnableBuffer(program, this.vertexBuffer, 'a_position');
         renderer.bindAndEnableBuffer(program, this.normalBuffer, 'a_normal');
+        renderer.bindAndEnableBuffer(program, this.texBuffer, 'a_texcoord', 2);
 
         if(wireframe) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.wireIndexBuffer);
@@ -1519,13 +1625,33 @@ sh.Cube = sh.SceneNode.extend({
         }
     },
 
+    setImage: function(img, smooth) {
+        this.tex = resources.uploadImage(img);
+
+        if(smooth) {
+            gl.bindTexture(gl.TEXTURE_2D, this.tex);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+    },
+
     render: function() {
+        if(this.tex) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.tex);
+
+            var sampleLoc = this._program.getUniformLocation('sampler');
+            if(sampleLoc) {
+                gl.uniform1i(sampleLoc, 0);
+            }
+
+            if(this.textureScale && this._program.textureScaleLoc) {
+                gl.uniform2fv(this._program.textureScaleLoc, this.textureScale);
+            }
+        }
+
         // TODO: don't dig into the program object like this
         sh.Cube.mesh.render(this._program.program, this.wireframe);
-
-        // if(normalLocation != -1) {
-        //     gl.disableVertexAttribArray(normalLocation);
-        // }
     }
 });
 
@@ -1646,13 +1772,47 @@ sh.Renderer = sh.Obj.extend({
                 if(prog.normalLoc) {
                     mat4.toInverseMat3(obj._realTransform, this._normalMatrix);
                     mat3.transpose(this._normalMatrix);
-                    
+
                     gl.uniformMatrix3fv(prog.normalLoc,
                                         false,
                                         this._normalMatrix);
                 }
 
+                if(prog.colorLoc) {
+                    if(obj.color) {
+                        gl.uniform3fv(prog.colorLoc, obj.color);
+                    }
+                    else {
+                        gl.uniform3f(prog.colorLoc, 0, 0, 0);
+                    }
+                }
+
+                if(obj.blend) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                }
+
+                if(obj.backface) {
+                    gl.disable(gl.CULL_FACE);
+                }
+
+                if(obj.noZbuffer) {
+                    gl.disable(gl.DEPTH_TEST);
+                }
+
                 obj.render();
+
+                if(obj.noZbuffer) {
+                    gl.enable(gl.DEPTH_TEST);
+                }
+
+                if(obj.backface) {
+                    gl.enable(gl.CULL_FACE);
+                }
+
+                if(obj.blend) {
+                    gl.disable(gl.BLEND);
+                }
             }
         }
 

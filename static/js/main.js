@@ -52,7 +52,7 @@ function notify(msg) {
 
 function init() {
     renderer = new sh.Renderer(w, h);
-    scene = new sh.Scene(255, 255);
+    scene = new sh.Scene(255 * 4, 255 * 4);
     server = new ServerConnection();
 
     createLevel(scene);
@@ -62,6 +62,18 @@ function init() {
     scene.addObject(player);
     scene.setCamera(new sh.Camera(player));
     renderer.perspective(45, w / h, 1.0, 5000.0);
+
+    var sky = new sh.Cube(null,
+                          null,
+                          [50, 50, 50],
+                         { centered: true });
+    sky.update = function(dt) {
+        this.setPos(player.pos[0], player.pos[1], player.pos[2]);
+    };
+    sky.id = 'sky';
+    sky.backface = true;
+    sky.noZbuffer = true;
+    scene.addObject(sky);
 
     var terrain = new Terrain(null, null, null,
                               scene.sceneWidth,
@@ -194,7 +206,7 @@ function initPage() {
     document.addEventListener('mozpointerlockerror', onPointerLockError, false);
     document.addEventListener('webkitpointerlockerror', onPointerLockError, false);
 
-    showIntro();
+    showInGame();
 }
 
 function showIntro() {
@@ -228,11 +240,16 @@ function showInGame() {
         'shaders/debug.vsh',
         'shaders/ui.fsh',
         'shaders/ui.vsh',
+        'shaders/sky.fsh',
+        'shaders/sky.vsh',
         'shaders/terrain.fsh',
         'shaders/terrain.vsh',
-        'img/test.png',
+        'shaders/textured.fsh',
+        'shaders/textured.vsh',
+        'img/octo.png',
         'img/crosshair.png',
         'img/grass.jpg',
+        'img/sky.png',
         'sounds/laser.wav'
     ]);
 

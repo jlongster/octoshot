@@ -25,7 +25,7 @@ var SceneNode = sh.Obj.extend({
         this.worldTransform = mat4.create();
         this._program = null;
         this.setAABB();
-        this.collisionType = sh.Collision.STATIC;
+        this.collisionType = sh.Collision.NONE;
 
         this.quat = quat4.fromAngleAxis(0.0, [0.0, 1.0, 0.0]);
         this.useQuat = false;

@@ -44,7 +44,7 @@
     });
 
     Terrain.getHeight = function(x, y, smooth) {
-        var v = noise.noise2D(x / 256, y / 256) * 10;
+        var v = noise.noise2D(x / 256, y / 256) * 40;
         if(!smooth) {
             v += noise.noise2D(x/16, y/16) * 2.0;
         }

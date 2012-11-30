@@ -88,6 +88,51 @@ sh.CubeMesh = sh.Obj.extend({
         ];
 
         gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+
+        // Texture coords
+
+        this.texBuffer = gl.createBuffer();
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.texBuffer);
+
+        var coords = [
+            // front
+            1, 1/6,
+            0, 1/6,
+            0, 0,
+            1, 0,
+ 
+            // left
+            1, 2/6,
+            0, 2/6,
+            0, 1/6,
+            1, 1/6,
+
+            // right
+            1, 3/6,
+            0, 3/6,
+            0, 2/6,
+            1, 2/6,
+
+            // back
+            1, 4/6,
+            0, 4/6,
+            0, 3/6,
+            1, 3/6,
+
+            // top
+            1, 5/6,
+            0, 5/6,
+            0, 4/6,
+            1, 4/6,
+
+            // bottom
+            1, 1,
+            0, 1,
+            0, 5/6,
+            1, 5/6
+        ];
+
+        gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(coords), gl.STATIC_DRAW);
         
         // Indices
 
@@ -138,6 +183,7 @@ sh.CubeMesh = sh.Obj.extend({
     render: function(program, wireframe) {
         renderer.bindAndEnableBuffer(program, this.vertexBuffer, 'a_position');
         renderer.bindAndEnableBuffer(program, this.normalBuffer, 'a_normal');
+        renderer.bindAndEnableBuffer(program, this.texBuffer, 'a_texcoord', 2);
 
         if(wireframe) {
             gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.wireIndexBuffer);
@@ -167,12 +213,32 @@ sh.Cube = sh.SceneNode.extend({
         }
     },
 
+    setImage: function(img, smooth) {
+        this.tex = resources.uploadImage(img);
+
+        if(smooth) {
+            gl.bindTexture(gl.TEXTURE_2D, this.tex);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+            gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+        }
+    },
+
     render: function() {
+        if(this.tex) {
+            gl.activeTexture(gl.TEXTURE0);
+            gl.bindTexture(gl.TEXTURE_2D, this.tex);
+
+            var sampleLoc = this._program.getUniformLocation('sampler');
+            if(sampleLoc) {
+                gl.uniform1i(sampleLoc, 0);
+            }
+
+            if(this.textureScale && this._program.textureScaleLoc) {
+                gl.uniform2fv(this._program.textureScaleLoc, this.textureScale);
+            }
+        }
+
         // TODO: don't dig into the program object like this
         sh.Cube.mesh.render(this._program.program, this.wireframe);
-
-        // if(normalLocation != -1) {
-        //     gl.disableVertexAttribArray(normalLocation);
-        // }
     }
 });

@@ -1,10 +1,10 @@
 
 (function(SceneNode, Cube, CubeMesh, Terrain, Collision, packets, vec3, mat4) {
 
-    var Entity = SceneNode.extend({
+    var Entity = Cube.extend({
         init: function(opts) {
             opts = opts || {};
-            this.parent(opts.pos, opts.rot, opts.scale);
+            this.parent(opts.pos, opts.rot, opts.scale, { centered: true });
             this.speed = opts.speed || 100;
 
             // The server does the collision for us (whee)
@@ -20,14 +20,42 @@
             if(!opts.rot) {
                 this.rotateY(Math.PI);
             }
-
-            // Center whatever mesh is used
-            this.preMatrix = mat4.create();
-            mat4.identity(this.preMatrix);
-            mat4.translate(this.preMatrix, [-.5, -.5, -.5]);
-
+            
             if(!opts.scale) {
                 this.setScale(25, 25, 25);
+            }
+
+            this.color = opts.color || vec3.createFrom(0, 0, 1);
+
+            // Add some tentacles
+            var R = this.addObject(new SceneNode({
+                update: function(dt) {
+                    this.rotateY(-Math.PI * dt);
+                }
+            }));
+            R.AABB = null;
+            
+            for(var i=0; i<=Math.PI * 2; i+=Math.PI / 4) {
+                var tent = R.addObject(new Cube(
+                    [Math.sin(i) / 2.0, -1.1, Math.cos(i) / 2.0],
+                    [-Math.cos(i) / 6.0, 0, Math.sin(i) / 6.0],
+                    [.15, 1, .15],
+                    { centered: true }
+                ));
+
+                var c = vec3.create();
+                vec3.scale(this.color, .5, c);
+                tent.color = c;
+                tent.AABB = null;
+            }
+
+            if(typeof module === 'undefined') {
+                this.setImage('img/octo.png');
+                this.setMaterial(['textured.vsh', 'textured.fsh']);
+                this.textureScale = vec2.createFrom(25.0 / 32.0,
+                                                    150.0 / 256.0);
+                this.blend = true;
+                this.backface = true;
             }
 
             var halfScale = vec3.create();
@@ -49,7 +77,7 @@
             this.historyPos = vec3.create();
             this.historyRot = vec3.create();
 
-            if(Cube && !Cube.mesh) {
+            if(CubeMesh && !Cube.mesh) {
                 Cube.mesh = new CubeMesh();
                 Cube.mesh.create();
             }
@@ -169,8 +197,10 @@
         },
 
         restart: function(spawnPoint) {
-            var sceneX = 256 * 4;
-            var sceneY = 256 * 4;
+            // var sceneX = scene.sceneWidth;
+            // var sceneY = scene.sceneDepth;
+            var sceneX = 255 * 4;
+            var sceneY = 255 * 4;
 
             switch(spawnPoint) {
             case 0:
@@ -243,10 +273,6 @@
                          this.targetRot);
                 this.interp = 0.0;
             }
-        },
-
-        render: function() {
-            Cube.mesh.render(this._program.program);
         }
     });
 
@@ -259,7 +285,7 @@
 
 }).apply(this, (typeof module !== 'undefined' ?
                 [require('./node-shade').SceneNode,
-                 null,
+                 require('./node-shade').Cube,
                  null,
                  require('./terrain'),
                  require('./node-shade').Collision,

@@ -12,7 +12,7 @@
             this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
 
             this.stateBuffer = [];
-            this.isGod = false;
+            this.isGod = true;
         },
 
         update: function(dt) {

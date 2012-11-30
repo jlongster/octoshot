@@ -21,6 +21,8 @@ sh.Program = sh.Obj.extend({
         this.worldTransformLoc = this.getUniformLocation("worldTransform");
         this.modelTransformLoc = this.getUniformLocation("modelTransform");
         this.normalLoc = this.getUniformLocation("normalMatrix");
+        this.colorLoc = this.getUniformLocation("matColor");
+        this.textureScaleLoc = this.getUniformLocation("textureScale");
     },
 
     getUniformLocation: function(uniform) {

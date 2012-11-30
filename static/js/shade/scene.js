@@ -10,7 +10,7 @@ sh.Scene = sh.Obj.extend({
         this._entities = [];
         this.sceneWidth = sceneWidth;
         this.sceneDepth = sceneDepth;
-        this.useQuadtree = false;
+        this.useQuadtree = true;
 
         this._quadtree = new sh.Quadtree(
             new sh.AABB(vec3.createFrom(sceneWidth / 2.0, 50, sceneDepth / 2.0),
@@ -128,6 +128,11 @@ sh.Scene = sh.Obj.extend({
 
     fillQueue: function(arr, cameraPoint, frustum) {
         if(this.useQuadtree) {
+            var sky = this.getObject('sky');
+            if(sky) {
+                arr.push(sky);
+            }
+
             this._quadtree.findObjectsInFrustum(frustum, cameraPoint, function(obj) {
                 if(arr.indexOf(obj) === -1) {
                     arr.push(obj);
@@ -137,7 +142,9 @@ sh.Scene = sh.Obj.extend({
             var ents = this._entities;
             for(var i=0; i<ents.length; i++) {
                 // Just go ahead and render all the entities, damnit
-                arr.push(ents[i]);
+                ents[i].traverse(function(obj) {
+                    arr.push(obj);
+                });
             }
         }
         else {

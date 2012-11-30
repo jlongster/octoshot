@@ -37,39 +37,39 @@ function handlePacket(packet) {
 // AI
 
 function initAI() {
-    var obj = {
-        type: p.inputPacket.typeId,
-        from: 0,
-        dt: .25,
-        sequenceId: id++,
-        mouseX: 0,
-        mouseY: 0,
-        mouseDown: 0,
-        left: 1,
-        right: 0,
-        up: 0,
-        down: 0
-    };
+    // var obj = {
+    //     type: p.inputPacket.typeId,
+    //     from: 0,
+    //     dt: .25,
+    //     sequenceId: id++,
+    //     mouseX: 0,
+    //     mouseY: 0,
+    //     mouseDown: 0,
+    //     left: 1,
+    //     right: 0,
+    //     up: 0,
+    //     down: 0
+    // };
 
-    var packet = p.makePacket(obj, p.inputPacket);
-    stream.write(packet);
+    // var packet = p.makePacket(obj, p.inputPacket);
+    // stream.write(packet);
 
-    obj = {
-        type: p.inputPacket.typeId,
-        from: 0,
-        dt: 2.5,
-        sequenceId: id++,
-        mouseX: 0,
-        mouseY: 0,
-        mouseDown: 0,
-        left: 0,
-        right: 0,
-        up: 1,
-        down: 0
-    };
+    // obj = {
+    //     type: p.inputPacket.typeId,
+    //     from: 0,
+    //     dt: 2.5,
+    //     sequenceId: id++,
+    //     mouseX: 0,
+    //     mouseY: 0,
+    //     mouseDown: 0,
+    //     left: 0,
+    //     right: 0,
+    //     up: 1,
+    //     down: 0
+    // };
 
-    packet = p.makePacket(obj, p.inputPacket);
-    stream.write(packet);
+    // packet = p.makePacket(obj, p.inputPacket);
+    // stream.write(packet);
 }
 
 var last = Date.now();
@@ -78,27 +78,29 @@ function runAI() {
     var now = Date.now();
     var dt = (now - last) / 1000;
 
-    var obj = {
-        type: p.inputPacket.typeId,
-        from: 0,
-        dt: Math.random() / 20,
-        sequenceId: id++,
-        mouseX: -1,
-        mouseY: 0,
-        mouseDown: 0,
-        left: 0,
-        right: 0,
-        up: 0,
-        down: 0
-    };
+    // var obj = {
+    //     type: p.inputPacket.typeId,
+    //     from: 0,
+    //     //dt: Math.random() / 20,
+    //     dt: .001,
+    //     sequenceId: id++,
+    //     mouseX: -1,
+    //     mouseY: 0,
+    //     mouseDown: 0,
+    //     left: 0,
+    //     right: 0,
+    //     up: 0,
+    //     down: 0
+    // };
 
-    var packet = p.makePacket(obj, p.inputPacket);
-    stream.write(packet);
+    // var packet = p.makePacket(obj, p.inputPacket);
+    // stream.write(packet);
 
     obj = {
         type: p.inputPacket.typeId,
         from: 0,
-        dt: Math.random() / 40,
+        //dt: Math.random() / 40,
+        dt: .001,
         sequenceId: id++,
         mouseX: 0,
         mouseY: 0,

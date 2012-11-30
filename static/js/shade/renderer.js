@@ -103,13 +103,47 @@ sh.Renderer = sh.Obj.extend({
                 if(prog.normalLoc) {
                     mat4.toInverseMat3(obj._realTransform, this._normalMatrix);
                     mat3.transpose(this._normalMatrix);
-                    
+
                     gl.uniformMatrix3fv(prog.normalLoc,
                                         false,
                                         this._normalMatrix);
                 }
 
+                if(prog.colorLoc) {
+                    if(obj.color) {
+                        gl.uniform3fv(prog.colorLoc, obj.color);
+                    }
+                    else {
+                        gl.uniform3f(prog.colorLoc, 0, 0, 0);
+                    }
+                }
+
+                if(obj.blend) {
+                    gl.enable(gl.BLEND);
+                    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+                }
+
+                if(obj.backface) {
+                    gl.disable(gl.CULL_FACE);
+                }
+
+                if(obj.noZbuffer) {
+                    gl.disable(gl.DEPTH_TEST);
+                }
+
                 obj.render();
+
+                if(obj.noZbuffer) {
+                    gl.enable(gl.DEPTH_TEST);
+                }
+
+                if(obj.backface) {
+                    gl.enable(gl.CULL_FACE);
+                }
+
+                if(obj.blend) {
+                    gl.disable(gl.BLEND);
+                }
             }
         }
 
