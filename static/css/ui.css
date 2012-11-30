@@ -18,7 +18,6 @@
 }
 
 #messages {
-    height: calc(100% - 45px);
     overflow: auto;
 }
 
@@ -76,21 +75,29 @@
 #notification {
     position: absolute;
     top: 0;
-    left: 25%;
-    width: 50%;
+    left: 30%;
+    width: 40%;
+    height: 5em;
+    overflow: hidden;
     text-align: center;
     color: black;
     padding: 1em;
+    padding-top: .5em;
     font-size: 20px;
-    opacity: 0;
     z-index: 3;
+}
 
+#notification .message {
+    opacity: 0;
+    background-color: white;
+    padding: 3px 0;
     -webkit-transition: opacity 10s;
     -moz-transition: opacity 10s;
 }
 
-#notification.open {
+#notification .message.open {
+    opacity: .7;
+
     -webkit-transition: opacity 1s;
     -moz-transition: opacity 1s;
-    opacity: 1;
 }

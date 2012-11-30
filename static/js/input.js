@@ -8,7 +8,9 @@
         38: 'UP',
         39: 'RIGHT',
         40: 'DOWN',
-        27: 'ESC'
+        27: 'ESC',
+        192: '`',
+        112: 'F1'
     };
     var lastMouse;
     var curMouse;
@@ -88,10 +90,10 @@
         events[key].push(func);
     }
 
-    function fire(key) {
+    function fire(key, event) {
         if(events[key]) {
             events[key].forEach(function(func) {
-                func(key);
+                func(event);
             });
         }
     }
@@ -115,7 +117,7 @@
         }
 
         if(!pressedKeys[k] && status) {
-            fire(k);
+            fire(k, event);
             pressedOnceKeys[k] = status;
         }
 

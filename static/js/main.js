@@ -40,16 +40,6 @@ function convertToWireframe(indices) {
     return arr;
 }
 
-function notify(msg) {
-    var n = $('#notification');
-    n.text(msg);
-    n.addClass('open');
-
-    setTimeout(function() {
-        n.removeClass('open');
-    }, 1000);
-}
-
 function init() {
     renderer = new sh.Renderer(w, h);
     scene = new sh.Scene(255 * 4, 255 * 4);
@@ -159,7 +149,7 @@ function initPage() {
         var el = $('#ingame')[0];
         $('.initialOverlay', el).hide();
         input.activate();
-        notify("Press T to bring up chat, ESC to close it");
+        messages.notify("Press T to bring up chat, ESC to close it");
     }
 
     function onFullscreenChange() {

@@ -11,7 +11,7 @@
 
         var w = scene.sceneWidth;
         var d = scene.sceneDepth;
-        var height = 150;
+        var height = 300;
         var thickness = 1000;
         var opts = { wireframe: false };
 

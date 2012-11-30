@@ -26,8 +26,27 @@
         return true;
     }
 
+    function notify(msg) {
+        var n = $('#notification');
+        var all = n.children('.message');
+
+        if(all.length > 2) {
+            all.first().remove();
+        }
+
+        var el = $('<div class="message">' + msg + '</div>');
+        n.append(el);
+        el.addClass('open');
+
+        setTimeout(function() {
+            el.removeClass('open');
+        }, 1000);
+    }
+
     function printMessage(msg, name, format) {
         var messages = $('#messages');
+        var chat = $('#chat');
+        var closed = chat.is('.closed');
 
         if(messages.children().length > 50) {
             messages.children().first().remove();
@@ -58,37 +77,47 @@
 
         }
 
-        messages.append(format(msg, name));
+        var formatted = format(msg, name);
+        messages.append(formatted);
         messages[0].scrollTop = 100000;
+
+        if(closed && name != 'server') {
+            notify(formatted);
+        }
     }
 
     function init() {
         var el = $('#message-input');
 
-        input.on('t', function() {
+        input.on('F1', function(e) {
             var chat = $('#chat');
-            chat.removeClass('closed');
-            chat.find('.type input').focus();
-        });
+            chat.toggleClass('closed');
 
-        input.on('esc', function() {
-            var chat = $('#chat');
-            chat.addClass('closed');
-            chat.find('.type input').blur();
+            if(chat.is('.closed')) {
+                chat.find('.type input').blur();
+            }
+            else {
+                chat.find('.type input').focus();
+            }
+
+            e.preventDefault();
+            e.stopPropagation();
         });
 
         el.on('keydown', function(e) {
-            if(e.keyCode != 27) {
+            if(e.keyCode != 112) {
                 e.stopPropagation();
             }
 
             if(e.keyCode == 13) {
                 var val = el.val();
 
-                if(!handleCommand(val)) {
-                    server.sendMessage(val);
+                if(val !== '') {
+                    if(!handleCommand(val)) {
+                        server.sendMessage(val);
+                    }
+                    el.val('');
                 }
-                el.val('');
             }
         });
 
@@ -108,9 +137,12 @@
                 });
             }
         });
+
+        $('#messages').height(renderer.height - $('#chat .type').height());
     }
 
     window.messages = {
-        init: init
+        init: init,
+        notify: notify
     };
 })();

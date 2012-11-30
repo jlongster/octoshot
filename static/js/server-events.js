@@ -35,11 +35,11 @@
             case 'die':
                 var node;
                 if(obj.from !== 0) {
-                    notify(obj.args[1] + ' was killed by ' + obj.args[0]);
+                    messages.notify(obj.args[1] + ' was killed by ' + obj.args[0]);
                     node = scene.getObject('anon' + obj.from);
                 }
                 else {
-                    notify('You were killed by ' + obj.args[0]);
+                    messages.notify('You were killed by ' + obj.args[0]);
                     node = scene.getCamera().target;
                 }
 

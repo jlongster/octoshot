@@ -5,12 +5,14 @@
         init: function(opts) {
             this.parent(opts);
             this.collisionType = Collision.ACTIVE;
+            this.upVelocity = 0.0;
 
             var halfScale = vec3.create();
             vec3.scale(this.scale, .5, halfScale);
             this.setScale(1, 1, 1);
             this.setAABB(vec3.createFrom(0, 0, 0), halfScale);
 
+            this.jumpCount = 0;
             this.stateBuffer = [];
         },
 
@@ -77,6 +79,17 @@
                 state.down = 1;
             }
 
+            if(input.isPressed('SPACE') && this.jumpCount < 2) {
+                moved = true;
+                this.jumpCount++;
+                this.upVelocity = 5.0;
+            }
+
+            if(this.jumpCount) {
+                moved = true;
+                this.applyVelocity(dt);
+            }
+
             if(moved) {
                 vec3.subtract(this.pos, diffPos, diffPos);
                 vec3.subtract(this.rot, diffRot, diffRot);
@@ -135,6 +148,23 @@
                 });
 
                 server.sendClick(entIds, entInterps, seqIds, v1, v2);
+            }
+        },
+
+        applyVelocity: function(dt) {
+            this.translateY(this.upVelocity);
+            this.upVelocity -= 8.0 * dt;
+
+            var h = this.getLowestHeight();
+            if(this.pos[1] < h) {
+                this.jumpCount--;
+                this.pos[1] = h;
+            }
+        },
+
+        setHeight: function() {
+            if(!this.jumpCount) {
+                this.parent();
             }
         },
 
@@ -201,15 +231,15 @@
             vec3.add(goodRot, [state.rotX, state.rotY, state.rotZ]);
 
             if(!this.isGod) {
-                vec3.set(goodPos, pos);
-                vec3.set(goodRot, rot);
+                // vec3.set(goodPos, pos);
+                // vec3.set(goodRot, rot);
 
-                // Apply the rest to get the final state
-                for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
-                    var pState = buffer[i];
-                    vec3.add(pos, [pState.x, pState.y, pState.z]);
-                    vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
-                }
+                // // Apply the rest to get the final state
+                // for(var i=bufferIdx + 1, l=buffer.length; i<l; i++) {
+                //     var pState = buffer[i];
+                //     vec3.add(pos, [pState.x, pState.y, pState.z]);
+                //     vec3.add(rot, [pState.rotX, pState.rotY, pState.rotZ]);
+                // }
             }
 
             buffer = buffer.slice(bufferIdx + 1);

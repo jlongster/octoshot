@@ -84,12 +84,25 @@
         
         setPos: function(x, y, z) {
             this.parent(x, y, z);
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            this.setHeight();
         },
         
         translate: function(x ,y, z) {
             this.parent(x, y, z);
-            this.pos[1] = Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            this.setHeight();
+        },
+
+        translateY: function(v) {
+            this.parent(v);
+            this.setHeight();
+        },
+
+        setHeight: function() {
+            this.pos[1] = this.getLowestHeight();
+        },
+
+        getLowestHeight: function() {
+            return Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
         },
 
         handleServerInput: function(state) {
