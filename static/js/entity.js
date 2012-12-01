@@ -179,13 +179,13 @@
         },
 
         rewind: function(sequenceId, interp) {
+            vec3.set(this.pos, this.historyPos);
+            vec3.set(this.rot, this.historyRot);
+
             if(sequenceId === 0) {
                 // If there is no history available, don't rollback
                 return;
             }
-
-            vec3.set(this.pos, this.historyPos);
-            vec3.set(this.rot, this.historyRot);
 
             for(var i=this.history.length - 1; i>=0; i--) {
                 var state = this.history[i];

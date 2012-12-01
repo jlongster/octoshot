@@ -24,8 +24,6 @@
         },
 
         handleClientInput: function(dt) {
-            this.snapshot();
-
             var moved = false;
             var mouse = input.getMouseMoved();
 
