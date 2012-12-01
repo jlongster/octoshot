@@ -303,6 +303,13 @@ function createUser(stream, room) {
         message: 'Available commands:\n    /nick <name> Change your nick\n    /names           View connected users\n    /me                 Perform an action'
     }));
 
+    stream.write(p.messagePacket({
+        type: p.messagePacket.typeId,
+        from: 0,
+        name: 'server-intro',
+        message: 'You can also paste media URLs in here and they will be displayed (images, youtube, etc)'
+    }));
+
     room.players.forEach(function(otherUser) {
         if(user != otherUser) {
             var ent = otherUser.entity;
