@@ -14,6 +14,7 @@ var Game = sh.Obj.extend({
     end: function(obj) {
         clearInterval(this._interval);
         input.deactivate();
+        messages.closeChat();
 
         this.showScores(obj.scores);
 

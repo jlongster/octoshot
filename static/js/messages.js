@@ -77,21 +77,30 @@
         }
     }
 
+    function toggleChat() {
+        var chat = $('#chat');
+        chat.toggleClass('closed');
+
+        if(chat.is('.closed')) {
+            chat.find('.type input').blur();
+        }
+        else {
+            $('#messages').height(renderer.height - $('#chat .type').height());
+            chat.find('.type input').focus();
+        }
+    }
+
+    function closeChat() {
+        var chat = $('#chat');
+        chat.addClass('closed');
+        chat.find('.type input').blur();        
+    }
+
     function init() {
         var el = $('#message-input');
 
         input.on('F1', function(e) {
-            var chat = $('#chat');
-            chat.toggleClass('closed');
-
-            if(chat.is('.closed')) {
-                chat.find('.type input').blur();
-            }
-            else {
-                $('#messages').height(renderer.height - $('#chat .type').height());
-                chat.find('.type input').focus();
-            }
-
+            toggleChat();
             e.preventDefault();
             e.stopPropagation();
         });
@@ -139,6 +148,8 @@
 
     window.messages = {
         init: init,
-        notify: notify
+        notify: notify,
+        toggleChat: toggleChat,
+        closeChat: closeChat
     };
 })();
