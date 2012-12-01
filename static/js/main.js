@@ -181,12 +181,12 @@ function load() {
         'img/crosshair.png',
         'img/heart.png',
         'img/heart-grey.png',
-        'img/stone.png',
-        'img/fork.png',
+        //'img/fork.png',
         'img/grass.jpg',
         'sounds/laser.wav',
         'sounds/hurt.wav',
-        'sounds/hit.wav'
+        'sounds/hit.wav',
+        'sounds/die.wav'
     ]);
 
     resources.onReady(init);

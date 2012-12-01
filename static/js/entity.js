@@ -242,6 +242,7 @@
                 break;
             }
 
+            resources.get('sounds/die.wav').play(.2);
             this.resetState();
         },
 

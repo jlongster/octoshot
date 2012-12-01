@@ -198,6 +198,8 @@
             this.parent(spawnPoint);
             vec3.set(this.pos, this.goodPos);
             vec3.set(this.rot, this.goodRot);
+
+            resources.get('sounds/die.wav').play();
         },
 
         saveState: function(pos, rot, sequenceId) {

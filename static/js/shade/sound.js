@@ -33,13 +33,13 @@ sh.AudioDataSound = sh.Sound.extend({
         this.buffers.push(buffer);
     },
 
-    play: function() {
+    play: function(volume) {
         try {
             var audio = new Audio();
             audio.mozSetup(this.channels, this.sampleRate);
             audio.autoplay = true;
             audio.muted = false;
-            audio.volume = 1;
+            audio.volume = volume || 1;
             this.audio = audio;
 
             var bufs = this.buffers;

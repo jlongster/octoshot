@@ -110,6 +110,13 @@ function handlePacket(user, data) {
                 }
             }
         }
+
+        room.broadcast(user, p.cmdPacket({
+            type: p.cmdPacket.typeId,
+            from: 0,
+            method: 'shoot',
+            args: null
+        }));
         break;
     case p.messagePacket:
         var message = packet.message;

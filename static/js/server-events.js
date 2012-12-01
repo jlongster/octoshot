@@ -80,6 +80,8 @@
             case 'fullRoom':
                 game.setFull(obj.args[0]);
                 break;
+            case 'shoot':
+                resources.get('sounds/laser.wav').play(.2);
             }
         });
     }
