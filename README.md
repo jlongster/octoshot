@@ -11,7 +11,7 @@ it will try to find an existing game and put you in it.
 The multiplayer server is authoritative, so it actually runs the game
 on the serve and reconciles everything with all the players. No cheating available!
 
-![][http://jlongster.com:4000/img/octo-screen.png]
+![](http://jlongster.com:4000/img/octo-screen.png)
 
 Whoever kills the most within 5 minutes wins the game!
 
