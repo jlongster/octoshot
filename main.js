@@ -204,6 +204,7 @@ function handleHit(shooter, target) {
 function handleDeath(killerUser, killedUser) {
     var spawnPoint = Math.floor(Math.random() * 4);
     killedUser.entity.restart(spawnPoint);
+    killedUser.numDeaths++;
 
     var obj = {
         type: p.cmdPacket.typeId,
@@ -216,6 +217,7 @@ function handleDeath(killerUser, killedUser) {
 
     obj.from = killedUser.id;
     killedUser.room.broadcast(killedUser, p.cmdPacket(obj));
+    killerUser.numKills++;
 }
 
 function newUserid() {
@@ -246,7 +248,9 @@ function getUser(id) {
 function createUser(stream, room) {
     var user = {
         stream: stream,
-        id: newUserid()
+        id: newUserid(),
+        numDeaths: 0,
+        numKills: 0
     };
 
     if(!user.id) {
@@ -338,6 +342,33 @@ function createUser(stream, room) {
         message: user.name + ' has joined'
     }));
 
+    if(room.count() > 1) {
+        if(!room.startTime()) {
+            room.start();
+            room.broadcast(null, p.gameStartPacket({
+                type: p.gameStartPacket.typeId,
+                from: 0,
+                started: room.startTime()
+            }));
+
+            room.onEnd(function() {
+                room.broadcast(null, p.gameOverPacket({
+                    type: p.gameOverPacket.typeId,
+                    from: 0,
+                    scores: room.getScores(),
+                    nextGameId: 'game' + Math.floor(Math.random() * 10000)
+                }));
+            });
+        }
+        else {
+            room.broadcast(null, p.gameStartPacket({
+                type: p.gameStartPacket.typeId,
+                from: 0,
+                started: room.startTime()
+            }));
+        }
+    }
+
     return user;
 }
 
@@ -377,7 +408,7 @@ function createRoom(name) {
     var scene = new Scene(255 * 4, 255 * 4);
     var room = new Room(name, scene);
     level.createLevel(scene);
-    room.start();
+    room.startSyncing();
 
     console.log('room "' + name + '" created [' + roomCount() + ']');
 
@@ -385,7 +416,7 @@ function createRoom(name) {
 }
 
 function destroyRoom(room) {
-    room.stop();
+    room.stopSyncing();
     ROOMS[room.name] = null;
 
     console.log('room "' + room.name + '" destroyed! [' + roomCount() + ']');
@@ -421,14 +452,35 @@ bserver.on('connection', function(client) {
         function joinRoom(data) {
             var packet = p.objectifyPacket(data);
 
-            if(typeof packet.room === 'string' &&
-               packet.room !== '') {
-                if(!ROOMS[packet.room]) {
-                    ROOMS[packet.room] = createRoom(packet.room);
+            if(typeof packet.room === 'string' && packet.room !== '') {
+                if(playerCount() > 1200) {
+                    stream.write(p.cmdPacket({
+                        type: p.cmdPacket.typeId,
+                        from: 0,
+                        method: 'fullRoom',
+                        args: ['server']
+                    }));
                 }
+                else {
+                    var room = ROOMS[packet.room];
 
-                stream.removeListener('data', joinRoom);
-                user = createUser(stream, ROOMS[packet.room]);
+                    if(!room) {
+                        room = ROOMS[packet.room] = createRoom(packet.room);
+                    }
+
+                    if(room.count() >= MAX_PER_ROOM) {
+                        stream.write(p.cmdPacket({
+                            type: p.cmdPacket.typeId,
+                            from: 0,
+                            method: 'fullRoom',
+                            args: ['room']
+                        }));
+                    }
+                    else {
+                        stream.removeListener('data', joinRoom);
+                        user = createUser(stream, ROOMS[packet.room]);
+                    }
+                }
             }
         }
 

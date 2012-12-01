@@ -19,6 +19,7 @@ var scene;
 var gl;
 var server;
 var player;
+var game;
 
 var canvas = document.getElementById('canvas');
 canvas.width = w;
@@ -43,6 +44,7 @@ function convertToWireframe(indices) {
 function init() {
     renderer = new sh.Renderer(w, h);
     scene = new sh.Scene(255 * 4, 255 * 4);
+    game = new Game();
 
     var room = window.location.pathname.slice(1);
     server = new ServerConnection(room);
@@ -80,8 +82,11 @@ function init() {
     messages.init();
     window.onresize = resize;
 
-    $('#ingame .initialOverlay').show();
-    heartbeat();
+    if(!game.isFull()) {
+        console.log('shogin');
+        $('#ingame .initialOverlay').show();
+        heartbeat();
+    }
 }
 
 var last = Date.now();

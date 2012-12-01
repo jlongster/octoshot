@@ -101,3 +101,94 @@
     -webkit-transition: opacity 1s;
     -moz-transition: opacity 1s;
 }
+
+#timer {
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 1em;
+
+    display: none;
+    font-size: 1.5em;
+    background-color: white;
+}
+
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+}
+
+.overlay > div {
+    margin: 0 auto;
+    margin-top: 10em;
+    width: 30em;
+    padding: 2em;
+    border: 4px solid black;
+    background-color: white;
+}
+
+#scores {
+    display: none;
+}
+
+#scores h2 {
+    margin-top: 0;
+}
+
+#scores ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+}
+
+#scores ul li {
+    margin: 1em 0;
+    padding: 5px 0;
+    border-bottom: 1px solid #d0d0d0;
+}
+
+#scores ul span {
+    display: inline-block;
+    width: 6em;
+}
+
+#scores ul span.total {
+    text-align: right;
+}
+
+#scores ul li.header {
+    font-weight: bold;
+    font-style: italic;
+}
+
+#scores .winner {
+    font-weight: bold;
+    font-size: 1.5em;
+    color: #339933;
+    text-align: center;
+}
+
+#scores .newgame {
+    margin-top: 2em;
+    text-align: center;
+    font-size: 1.1em;
+    font-style: italic;
+}
+
+#fullRoom {
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: none;
+}
+
+#fullRoom .server, #fullRoom .room {
+    display: none;
+}
+
+#fullRoom button {
+    font-size: 1em;
+}

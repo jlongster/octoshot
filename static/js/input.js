@@ -169,6 +169,7 @@
         document.removeEventListener('mousedown', onMouseDown);
         document.removeEventListener('mousemove', onMouseMove);
         document.removeEventListener('mouseup', onMouseUp);
+        pressedKeys = {};
     }
 
     window.input = {

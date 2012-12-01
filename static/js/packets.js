@@ -50,6 +50,8 @@
 
     var joinRoomPacket = jsPacketType(basePacket, ['room']);
     var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
+    var gameStartPacket = jsPacketType(basePacket, ['started']);
+    var gameOverPacket = jsPacketType(basePacket, ['scores', 'nextGameId']);
     var leavePacket = jsPacketType(basePacket, ['id', 'name']);
     var messagePacket = jsPacketType(basePacket, ['name', 'message']);
     var cmdPacket = jsPacketType(basePacket, ['method', 'args']);
@@ -229,6 +231,8 @@
         joinRoomPacket: joinRoomPacket,
         newUserPacket: newUserPacket,
         joinPacket: joinPacket,
+        gameStartPacket: gameStartPacket,
+        gameOverPacket: gameOverPacket,
         leavePacket: leavePacket,
         inputPacket: inputPacket,
         clickPacket: clickPacket,

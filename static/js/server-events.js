@@ -28,6 +28,14 @@
             }
         });
 
+        server.on('gameStart', function(obj) {
+            game.start(obj.started);
+        });
+
+        server.on('gameOver', function(obj) {
+            game.end(obj);
+        });
+
         server.on('state', function(obj) {
             var node;
             if(obj.from !== 0) {
@@ -62,6 +70,10 @@
                 if(node) {
                     node.hit();
                 }
+                break;
+            case 'fullRoom':
+                game.setFull(obj.args[0]);
+                break;
             }
         });
     }

@@ -55,7 +55,7 @@ canvas {
     color: black;
 }
 
-#intro button {
+button {
     border: 1px solid black;
     font-size: 1.5em;
     color: white;

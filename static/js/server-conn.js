@@ -40,6 +40,11 @@ var ServerConnection = sh.Obj.extend({
             obj = packets.parsePacket(packet, packets.statePacket);
             this.fire('state', obj);
             break;
+        case packets.gameStartPacket:
+            this.fire('gameStart', obj);
+            break;
+        case packets.gameOverPacket:
+            this.fire('gameOver', obj);
         case packets.joinPacket:
             obj = packets.parsePacket(packet, packets.joinPacket);
             this.fire('join', obj);

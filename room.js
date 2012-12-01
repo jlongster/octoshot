@@ -4,13 +4,50 @@ function Room(name, scene) {
     this.name = name;
     this.scene = scene;
     this.players = [];
+    this.started = null;
 }
 
 Room.prototype.start = function() {
+    this.started = Date.now();
+
+    var _this = this;
+    setTimeout(function() {
+        _this.end();
+    }, 60 * 5 * 1000);
+};
+
+Room.prototype.end = function() {
+    if(this._onEnd) {
+        this._onEnd();
+    }
+};
+
+Room.prototype.onEnd = function(func) {
+    this._onEnd = func;
+};
+
+Room.prototype.getScores = function() {
+    var scores = {};
+
+    for(var i=0, l=this.players.length; i<l; i++) {
+        var player = this.players[i];
+
+        scores[player.name] = { deaths: player.numDeaths,
+                                kills: player.numKills };
+    }
+
+    return scores;
+};
+
+Room.prototype.startTime = function() {
+    return this.started;
+};
+
+Room.prototype.startSyncing = function() {
     this.scene.start(this);
 };
 
-Room.prototype.stop = function() {
+Room.prototype.stopSyncing = function() {
     this.scene.stop(this);
 };
 

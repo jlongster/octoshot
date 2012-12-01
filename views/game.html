@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <title>Room {{ room }} | Octoshot | Github Game Off 2012</title>
+    <title>Game {{ room }} | Octoshot | Github Game Off 2012</title>
 
     <link rel="stylesheet" type="text/css" href="css/main.css" />
     <link rel="stylesheet" type="text/css" href="css/ui.css" />
@@ -12,6 +12,30 @@
   <body class="ingame">
     <div id="ingame">
       <canvas id="canvas"></canvas>
+
+      <div id="timer"></div>
+      <div id="scores" class="overlay">
+        <div>
+          <h2>Scores</h2>
+          <div class="results">
+          </div>
+          <div class="winner"><span></span> is the winner!</div>
+          <div class="newgame"></div>
+        </div>
+      </div>
+      
+      <div id="fullRoom" class="overlay">
+        <div>
+          <p class="server">
+            Sorry, but the whole game server is full right now. Try again later.
+          </p>
+          <div class="room">
+            <p>Sorry, but this game is full.</p>
+            <button class="play-find">Find another Game</button>
+            <button class="play-start">Start a new Game</button>
+          </div>
+        </div>
+      </div>
 
       <div id="notification"></div>
 
@@ -74,6 +98,7 @@
     <script src="js/server-conn.js"></script>
     <script src="js/server-events.js"></script>
     <script src="js/messages.js"></script>
+    <script src="js/gameButtons.js"></script>
 
     <script src="js/input.js"></script>
     <script src="js/simplex-noise.js"></script>
@@ -81,6 +106,7 @@
     <script src="js/level.js"></script>
     <script src="js/entity.js"></script>
     <script src="js/player.js"></script>
+    <script src="js/game.js"></script>
     <script src="js/stats.min.js"></script>
     <script src="js/main.js"></script>
   </body>
