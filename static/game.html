@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Github Game Off 2012</title>
+
+    <link rel="stylesheet" type="text/css" href="css/main.css" />
+    <link rel="stylesheet" type="text/css" href="css/ui.css" />
+    <style>
+    </style>
+  </head>
+  <body class="ingame">
+    <div id="ingame">
+      <canvas id="canvas"></canvas>
+
+      <div id="notification"></div>
+
+      <div id="chat" class="closed">
+        <div id="messages"></div>
+        <div class="type">
+          <div class="inner">
+            <input id="message-input" type="text" name="message" autocomplete="off" />
+          </div>
+        </div>
+      </div>
+
+      <div class="initialOverlay">
+        <p>Use WASD or arrow keys to move around, and space to jump.</p>
+
+        <p>
+          <strong>In fullscreen mode</strong>, use mouse to look around and click
+          shoot.
+        </p>
+
+        <p>
+          <strong>In windowed mode</strong>, click and drag to look around and hit E to
+          shoot.
+        </p>
+          
+        <p>
+          Want to go fullscreen (recommended for pointer lock)?
+          <button class="start">Yes</button>
+          <button class="no">No</button>
+        </p>
+      </div>
+    </div>
+
+    <script>
+      window.sh = {};
+      window.sh.util = {};
+    </script>
+    <script src="js/shade/gl-matrix.js"></script>
+    <script src="js/shade/util.js"></script>
+    <script src="js/shade/object.js"></script>
+    <script src="js/shade/program.js"></script>
+    <script src="js/shade/resources.js"></script>
+    <script src="js/shade/scene.js"></script>
+    <script src="js/shade/scenenode.js"></script>
+    <script src="js/shade/mesh.js"></script>
+    <script src="js/shade/cube.js"></script>
+    <script src="js/shade/line.js"></script>
+    <script src="js/shade/square.js"></script>
+    <script src="js/shade/camera.js"></script>
+    <script src="js/shade/renderer.js"></script>
+    <script src="js/shade/mesh-loader.js"></script>
+    <script src="js/shade/collision.js"></script>
+    <script src="js/shade/quadtree.js"></script>
+    <script src="js/shade/aabb.js"></script>
+    <script src="js/shade/sound.js"></script>
+
+    <script src="js/zepto.min.js"></script>
+    <script src="js/lib/binary.js"></script>
+    <script src="js/packets.js"></script>
+    <script src="js/server-conn.js"></script>
+    <script src="js/server-events.js"></script>
+    <script src="js/messages.js"></script>
+
+    <script src="js/input.js"></script>
+    <script src="js/simplex-noise.js"></script>
+    <script src="js/terrain.js"></script>
+    <script src="js/level.js"></script>
+    <script src="js/entity.js"></script>
+    <script src="js/player.js"></script>
+    <script src="js/stats.min.js"></script>
+    <script src="js/main.js"></script>
+  </body>
+</html>

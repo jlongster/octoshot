@@ -43,7 +43,9 @@ function convertToWireframe(indices) {
 function init() {
     renderer = new sh.Renderer(w, h);
     scene = new sh.Scene(255 * 4, 255 * 4);
-    server = new ServerConnection();
+
+    var room = window.location.pathname.slice(1);
+    server = new ServerConnection(room);
 
     createLevel(scene);
     createOverlay(scene);
@@ -78,7 +80,7 @@ function init() {
     messages.init();
     window.onresize = resize;
 
-    onGameStart();
+    $('#ingame .initialOverlay').show();
     heartbeat();
 }
 
@@ -122,13 +124,41 @@ function resize() {
     renderer.perspective(45, w / h, 1.0, 5000.0);
 }
 
-// Various screens for the game
+function load() {
+    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+
+    // stats = new Stats();
+    // //stats.setMode(1);
+    // stats.domElement.style.position = 'absolute';
+    // stats.domElement.style.right = '0px';
+    // stats.domElement.style.top = '0px';
+    // document.body.appendChild(stats.domElement);
+
+    resources.load([
+        'shaders/default.fsh',
+        'shaders/default.vsh',
+        'shaders/debug.fsh',
+        'shaders/debug.vsh',
+        'shaders/ui.fsh',
+        'shaders/ui.vsh',
+        'shaders/sky.fsh',
+        'shaders/sky.vsh',
+        'shaders/terrain.fsh',
+        'shaders/terrain.vsh',
+        'shaders/textured.fsh',
+        'shaders/textured.vsh',
+        'img/octo.png',
+        'img/crosshair.png',
+        'img/grass.jpg',
+        'sounds/laser.wav',
+        'sounds/hurt.wav',
+        'sounds/hit.wav'
+    ]);
+
+    resources.onReady(init);
+}
 
 function initPage() {
-    $('#intro button.play').click(function() {
-        showInGame();
-    });
-
     $('#ingame button.start').click(function() {
         actuallyStart();
 
@@ -195,60 +225,9 @@ function initPage() {
     document.addEventListener('pointerlockerror', onPointerLockError, false);
     document.addEventListener('mozpointerlockerror', onPointerLockError, false);
     document.addEventListener('webkitpointerlockerror', onPointerLockError, false);
-
-    showIntro();
 }
 
-function showIntro() {
-    $('body')[0].className = 'intro';
-    stopped = true;
-    input.deactivate();
-}
-
-function showInstructions() {
-    $('body')[0].className = 'instructions';
-    stopped = true;
-    input.deactivate();
-}
-
-function showInGame() {
-    $('body')[0].className = 'ingame';
-    stopped = false;
-    gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
-
-    // stats = new Stats();
-    // //stats.setMode(1);
-    // stats.domElement.style.position = 'absolute';
-    // stats.domElement.style.right = '0px';
-    // stats.domElement.style.top = '0px';
-    // document.body.appendChild(stats.domElement);
-
-    resources.load([
-        'shaders/default.fsh',
-        'shaders/default.vsh',
-        'shaders/debug.fsh',
-        'shaders/debug.vsh',
-        'shaders/ui.fsh',
-        'shaders/ui.vsh',
-        'shaders/sky.fsh',
-        'shaders/sky.vsh',
-        'shaders/terrain.fsh',
-        'shaders/terrain.vsh',
-        'shaders/textured.fsh',
-        'shaders/textured.vsh',
-        'img/octo.png',
-        'img/crosshair.png',
-        'img/grass.jpg',
-        'sounds/laser.wav',
-        'sounds/hurt.wav',
-        'sounds/hit.wav'
-    ]);
-
-    resources.onReady(init);
-}
-
-function onGameStart() {
-    $('#ingame .initialOverlay').show();
-}
-
-$(initPage);
+$(function() {
+    initPage();
+    load();
+});

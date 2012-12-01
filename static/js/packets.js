@@ -48,6 +48,7 @@
         ['rotZ', 'float']        
     ]);
 
+    var joinRoomPacket = jsPacketType(basePacket, ['room']);
     var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
     var leavePacket = jsPacketType(basePacket, ['id', 'name']);
     var messagePacket = jsPacketType(basePacket, ['name', 'message']);
@@ -225,6 +226,7 @@
 
     var packets = {
         basePacket: basePacket,
+        joinRoomPacket: joinRoomPacket,
         newUserPacket: newUserPacket,
         joinPacket: joinPacket,
         leavePacket: leavePacket,

@@ -41,15 +41,15 @@ module.exports = Scene.extend({
         entity.sendDiff(packet.sequenceId);
     },
 
-    start: function(lookupUser, broadcast) {
+    start: function(room) {
         var _this = this;
-        setInterval(function() {
+        this._interval = setInterval(function() {
             _this.traverse(function(ent) {
                 if(!(ent instanceof Entity)) {
                     return;
                 }
 
-                var user = lookupUser(ent);
+                var user = room.lookupUser(ent);
                 var buffer = ent.flushPackets();
 
                 if(user) {
@@ -78,11 +78,17 @@ module.exports = Scene.extend({
 
                         user.stream.write(p.makePacket(state, p.statePacket));
                         state.from = user.id;
-                        broadcast(user, p.makePacket(state, p.statePacket));
+                        room.broadcast(user, p.makePacket(state, p.statePacket));
                         ent.saveHistory(state);
                     }
                 }
             });
         }, 100);
+    },
+
+    stop: function() {
+        if(this._interval) {
+            clearInterval(this._interval);
+        }
     }
 });

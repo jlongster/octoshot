@@ -5,6 +5,7 @@ var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
 var p = require('./static/js/packets');
 var Scene = require('./scene');
+var Room = require('./room');
 var Entity = require('./static/js/entity');
 var level = require('./static/js/level');
 
@@ -15,36 +16,24 @@ app.configure(function() {
     app.use(express.static(__dirname + '/static'));
 });
 
+app.get('/:id', function(req, res) {
+    var id = req.params.id;
+
+    fs.readFile(__dirname + '/static/game.html', function(err, data) {
+        res.writeHead(200, { 'Content-Type': 'text/html',
+                             'Content-Length': data.length });
+        res.write(data);
+        res.end();
+    });
+});
+
 // Sockets
 
-var CLIENTS = [];
-var scene = new Scene(255 * 4, 255 * 4);
-
-function broadcast(user, packet) {
-    for(var i=0, l=CLIENTS.length; i<l; i++) {
-        if(CLIENTS[i] != user) {
-            try {
-                CLIENTS[i].stream.write(packet);
-            }
-            catch(e) {
-                console.log('send error: ' + e);
-            }
-        }
-    }
-}
-
-function lookupUser(entity) {
-    for(var i=0, l=CLIENTS.length; i<l; i++) {
-        if(CLIENTS[i].entity === entity) {
-            return CLIENTS[i];
-        }
-    }
-
-    return null;
-}
+var ROOMS = {};
 
 function handlePacket(user, data) {
     var packet, desc;
+    var room = user.room;
 
     if(data instanceof Buffer) {
         packet = p.parsePacket(data, p.basePacket);
@@ -56,7 +45,7 @@ function handlePacket(user, data) {
     switch(p.getPacketDesc(packet.type)) {
     case p.inputPacket:
         packet = p.parsePacket(data, p.inputPacket);
-        scene.update(user.entity, packet);
+        room.scene.update(user.entity, packet);
         break;
     case p.clickPacket:
         var entStates = {};
@@ -65,19 +54,19 @@ function handlePacket(user, data) {
                                             interp: packet.entInterps[i] };
         }
 
-        var ents = scene.getHit(user,
-                                entStates,
-                                [packet.x, packet.y, packet.z],
-                                [packet.x2, packet.y2, packet.z2]);
+        var ents = room.scene.getHit(user,
+                                     entStates,
+                                     [packet.x, packet.y, packet.z],
+                                     [packet.x2, packet.y2, packet.z2]);
         if(ents.length) {
             for(var i=0; i<ents.length; i++) {
                 ents[i].hit();
 
                 if(ents[i].isDead()) {
-                    handleDeath(user, lookupUser(ents[i]));
+                    handleDeath(user, room.lookupUser(ents[i]));
                 }
                 else {
-                    handleHit(user, lookupUser(ents[i]));
+                    handleHit(user, room.lookupUser(ents[i]));
                 }
             }
         }
@@ -93,7 +82,7 @@ function handlePacket(user, data) {
                 message: res
             });
 
-            broadcast(user, packet);
+            room.broadcast(user, packet);
             user.stream.write(packet);
         });
         break;
@@ -115,13 +104,13 @@ function handlePacket(user, data) {
                 });
 
                 user.name = newName;
-                broadcast(user, packet);
+                room.broadcast(user, packet);
                 user.stream.write(packet);
             }
             break;
         case 'users':
         case 'names':
-            var names = CLIENTS.map(function(user) { return user.name; });
+            var names = room.names();
             user.stream.write(p.cmdResPacket({
                 type: p.cmdResPacket.typeId,
                 from: 0,
@@ -138,7 +127,7 @@ function handlePacket(user, data) {
                     res: '* ' + user.name + ' ' + args.join(' ')
                 });
 
-                broadcast(user, packet);
+                room.broadcast(user, packet);
                 user.stream.write(packet);
             }
             break;
@@ -186,15 +175,15 @@ function handleDeath(killerUser, killedUser) {
     killedUser.stream.write(p.cmdPacket(obj));
 
     obj.from = killedUser.id;
-    broadcast(killedUser, p.cmdPacket(obj));
+    killedUser.room.broadcast(killedUser, p.cmdPacket(obj));
 }
 
 function newUserid() {
     var id;
 
     while(1) {
-        id = Math.floor(Math.random() * 10000);
-        if(!getUser(id)) {
+        id = Math.floor(Math.random() * 100000);
+        if(!getUser('anon' + id)) {
             return id;
         }
     }
@@ -204,158 +193,185 @@ function newUserid() {
 }
 
 function getUser(id) {
-    for(var i=0, l=CLIENTS.length; i<l; i++) {
-        if(CLIENTS[i].id == id) {
-            return CLIENTS[i];
+    for(var i=0, l=ROOMS.length; i<l; i++) {
+        var player = ROOMS.getPlayer(id);
+        if(player) {
+            return player;
         }
     }
 
     return null;
 }
 
+function createUser(stream, room) {
+    var user = {
+        stream: stream,
+        id: newUserid()
+    };
+
+    if(!user.id) {
+        return;
+    }
+
+    user.name = 'anon' + user.id;
+    user.entity = new Entity();
+    user.entity.id = user.name;
+    user.room = room;
+    room.addPlayer(user);
+
+    console.log(user.name + ' connected [' + room.count() + ']');
+
+    stream.on('data', function(data) {
+        handlePacket(user, data);
+    });
+
+    stream.on('error', function(err) {
+        console.log(err);
+    });
+
+    // Tell the user his/her id
+    stream.write(p.newUserPacket({
+        type: p.newUserPacket.typeId,
+        from: 0,
+        id: user.id,
+        name: user.name
+    }));
+
+    stream.write(p.messagePacket({
+        type: p.messagePacket.typeId,
+        from: 0,
+        name: 'server',
+        message: 'Welcome ' + user.name + '!'
+    }));
+
+    stream.write(p.messagePacket({
+        type: p.messagePacket.typeId,
+        from: 0,
+        name: 'server',
+        message: 'Currently ' + room.count() + ' players are connected.'
+    }));
+
+    stream.write(p.messagePacket({
+        type: p.messagePacket.typeId,
+        from: 0,
+        name: 'server',
+        message: 'Available commands:\n    /nick <name> Change your nick\n    /names           View connected users\n    /me                 Perform an action'
+    }));
+
+    room.players.forEach(function(otherUser) {
+        if(user != otherUser) {
+            var ent = otherUser.entity;
+            var obj = {
+                type: p.joinPacket.typeId,
+                from: 0,
+                id: otherUser.id,
+                x: ent.goodPos[0],
+                y: ent.goodPos[1],
+                z: ent.goodPos[2],
+                rotX: ent.goodRot[0],
+                rotY: ent.goodRot[1],
+                rotZ: ent.goodRot[2]
+            };
+
+            var packet = p.makePacket(obj, p.joinPacket);
+            stream.write(packet);
+        }
+    });
+
+    // Broadcast to everyone about the new player
+    room.broadcast(user, p.makePacket({
+        type: p.joinPacket.typeId,
+        from: 0,
+        id: user.id,
+        x: user.entity.pos[0],
+        y: user.entity.pos[1],
+        z: user.entity.pos[2],
+        rotX: user.entity.rot[0],
+        rotY: user.entity.rot[1],
+        rotZ: user.entity.rot[2]
+    }, p.joinPacket));
+
+    room.broadcast(user, p.messagePacket({
+        type: p.messagePacket.typeId,
+        from: 0,
+        name: 'server',
+        message: user.name + ' has joined'
+    }));
+
+    return user;
+}
+
+function removeUser(user) {
+    if(!user) {
+        return;
+    }
+
+    var room = user.room;
+    room.removePlayer(user);
+
+    console.log(user.name + ' disconnected [' + room.count() + ']');
+
+    // Broadcast to everyone that he/she left
+    if(user.id) {
+        room.broadcast(user, p.leavePacket({
+            type: p.leavePacket.typeId,
+            from: 0,
+            id: user.id,
+            name: user.name
+        }));
+
+        room.broadcast(user, p.messagePacket({
+            type: p.messagePacket.typeId,
+            from: 0,
+            name: 'server',
+            message: user.name + ' has left'
+        }));
+    }
+}
+
+function createRoom(name) {
+    var scene = new Scene(255 * 4, 255 * 4);
+    var room = new Room(name, scene);
+    level.createLevel(scene);
+    room.start();
+    return room;
+}
+
+// Create the actual connection
+
 var bserver = new BinaryServer({ server: server });
 
 bserver.on('connection', function(client) {
-    var user = {
-        client: client,
-        stream: null,
-        id: null
-    };
+    var user;
 
     client.on('error', function(err) {
         console.log(err);
     });
 
     client.on('stream', function(stream) {
-        var userId = newUserid();
+        function joinRoom(data) {
+            var packet = p.objectifyPacket(data);
 
-        if(!userId) {
-            return;
+            if(typeof packet.room === 'string' &&
+               packet.room !== '') {
+                if(!ROOMS[packet.room]) {
+                    ROOMS[packet.room] = createRoom(packet.room);
+                }
+
+                stream.removeListener('data', joinRoom);
+                user = createUser(stream, ROOMS[packet.room]);
+            }
         }
 
-        CLIENTS.push(user);
-        user.stream = stream;
-        user.id = userId;
-        user.name = 'anon' + user.id;
-        user.entity = new Entity();
-        user.entity.id = user.name;
-        scene.addObject(user.entity);
-
-        console.log(user.name + ' connected [' + CLIENTS.length + ']');
-
-        stream.on('data', function(data) {
-            handlePacket(user, data);
-        });
-
-        stream.on('error', function(err) {
-            console.log(err);
-        });
-
-        // Tell the user his/her id
-        stream.write(p.newUserPacket({
-            type: p.newUserPacket.typeId,
-            from: 0,
-            id: user.id,
-            name: user.name
-        }));
-
-        stream.write(p.messagePacket({
-            type: p.messagePacket.typeId,
-            from: 0,
-            name: 'server',
-            message: 'Welcome ' + user.name + '!'
-        }));
-
-        stream.write(p.messagePacket({
-            type: p.messagePacket.typeId,
-            from: 0,
-            name: 'server',
-            message: 'Currently ' + CLIENTS.length + ' players are connected.'
-        }));
-
-        stream.write(p.messagePacket({
-            type: p.messagePacket.typeId,
-            from: 0,
-            name: 'server',
-            message: 'Available commands:\n    /nick <name> Change your nick\n    /names           View connected users\n    /me                 Perform an action'
-        }));
-
-        CLIENTS.forEach(function(otherUser) {
-            if(user != otherUser) {
-                var ent = otherUser.entity;
-                var obj = {
-                    type: p.joinPacket.typeId,
-                    from: 0,
-                    id: otherUser.id,
-                    x: ent.goodPos[0],
-                    y: ent.goodPos[1],
-                    z: ent.goodPos[2],
-                    rotX: ent.goodRot[0],
-                    rotY: ent.goodRot[1],
-                    rotZ: ent.goodRot[2]
-                };
-
-                var packet = p.makePacket(obj, p.joinPacket);
-                stream.write(packet);
-            }
-        });
-
-        // Broadcast to everyone about the new player
-        broadcast(user, p.makePacket({
-            type: p.joinPacket.typeId,
-            from: 0,
-            id: user.id,
-            x: user.entity.pos[0],
-            y: user.entity.pos[1],
-            z: user.entity.pos[2],
-            rotX: user.entity.rot[0],
-            rotY: user.entity.rot[1],
-            rotZ: user.entity.rot[2]
-        }, p.joinPacket));
-
-        broadcast(user, p.messagePacket({
-            type: p.messagePacket.typeId,
-            from: 0,
-            name: 'server',
-            message: user.name + ' has joined'
-        }));
+        stream.on('data', joinRoom);
     });
 
     client.on('close', function() {
-        // Remove itself from the clients array
-        CLIENTS.splice(CLIENTS.indexOf(user), 1);
-
-        // And from the scene
-        var ent = scene.getObject(user.name);
-        if(ent) {
-            ent._parent.removeObject(ent);
-        }
-
-        console.log(user.name + ' disconnected [' + CLIENTS.length + ']');
-
-        // Broadcast to everyone that he/she left
-        if(user.id) {
-            broadcast(user, p.leavePacket({
-                type: p.leavePacket.typeId,
-                from: 0,
-                id: user.id,
-                name: user.name
-            }));
-
-            broadcast(user, p.messagePacket({
-                type: p.messagePacket.typeId,
-                from: 0,
-                name: 'server',
-                message: user.name + ' has left'
-            }));
-        }
+        removeUser(user);
     });
 });
-
-level.createLevel(scene);
 
 // Fire up the server
 
 console.log('Started server on ' + settings.port + '...');
 server.listen(settings.port);
-scene.start(lookupUser, broadcast);

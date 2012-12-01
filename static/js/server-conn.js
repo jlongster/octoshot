@@ -1,6 +1,6 @@
 
 var ServerConnection = sh.Obj.extend({
-    init: function() {
+    init: function(room) {
         var _this = this;
         var client = this.client = new BinaryClient('ws://' + location.host);
         this.sequence = 0;
@@ -8,6 +8,12 @@ var ServerConnection = sh.Obj.extend({
 
         client.on('open', function() {
             var stream = _this.stream = client.createStream();
+
+            stream.write(packets.joinRoomPacket({
+                type: packets.joinRoomPacket.typeId,
+                from: 0,
+                room: room
+            }));
 
             stream.on('data', function(data) {
                 _this.handlePacket(data);

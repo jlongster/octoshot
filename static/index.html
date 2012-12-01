@@ -13,9 +13,28 @@
     <div id="intro">
       <h1>Octoshot</h1>
       
-      <p>A 3d first person shooter for the web!</p>
+      <p><em>A 3d first person shooter for the web!</em></p>
 
-      <button class="play">Play now!</button>
+      <h3>Rules</h3>
+
+      <ul class="rules">
+        <li>Games can have 2-8 players</li>
+        <li>Only headshots count -- but you have big heads!</li>
+        <li>Everyone has 3 points of health (3 shots kills somebody)</li>
+        <li>Use WASD or the arrow keys to move around</li>
+        <li>
+           If in fullscreen mode, shoot with a mouse click and look
+           around with the mouse
+        </li>
+        <li>
+          If in windowed mode, shoot with the E key and click and drag
+          to look around
+        </li>
+        <li>Get the most kills in 5 minutes!</li>
+      </ul>
+      
+      <button class="play-find">Find a Game</button>
+      <button class="play-start">Start a Game</button>
     </div>
 
     <div id="instructions">
@@ -57,43 +76,6 @@
       </div>
     </div>
 
-    <script>
-      window.sh = {};
-      window.sh.util = {};
-    </script>
-    <script src="js/shade/gl-matrix.js"></script>
-    <script src="js/shade/util.js"></script>
-    <script src="js/shade/object.js"></script>
-    <script src="js/shade/program.js"></script>
-    <script src="js/shade/resources.js"></script>
-    <script src="js/shade/scene.js"></script>
-    <script src="js/shade/scenenode.js"></script>
-    <script src="js/shade/mesh.js"></script>
-    <script src="js/shade/cube.js"></script>
-    <script src="js/shade/line.js"></script>
-    <script src="js/shade/square.js"></script>
-    <script src="js/shade/camera.js"></script>
-    <script src="js/shade/renderer.js"></script>
-    <script src="js/shade/mesh-loader.js"></script>
-    <script src="js/shade/collision.js"></script>
-    <script src="js/shade/quadtree.js"></script>
-    <script src="js/shade/aabb.js"></script>
-    <script src="js/shade/sound.js"></script>
-
-    <script src="js/zepto.min.js"></script>
-    <script src="js/lib/binary.js"></script>
-    <script src="js/packets.js"></script>
-    <script src="js/server-conn.js"></script>
-    <script src="js/server-events.js"></script>
-    <script src="js/messages.js"></script>
-
-    <script src="js/input.js"></script>
-    <script src="js/simplex-noise.js"></script>
-    <script src="js/terrain.js"></script>
-    <script src="js/level.js"></script>
-    <script src="js/entity.js"></script>
-    <script src="js/player.js"></script>
-    <script src="js/stats.min.js"></script>
-    <script src="js/main.js"></script>
+    <script src="js/landing.js"></script>
   </body>
 </html>

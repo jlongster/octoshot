@@ -75,6 +75,13 @@ canvas {
     display: none;
 }
 
+#intro .rules {
+    text-align: left;
+    width: 40em;
+    margin: 3em auto;
+    margin-top: 1em;
+}
+
 body.intro #intro,
 body.instructions #instructions,
 body.ingame #ingame {
