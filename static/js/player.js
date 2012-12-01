@@ -175,8 +175,7 @@
 
         hit: function() {
             this.health--;
-            resources.get('sounds/hurt.wav').play();
-
+            
             var heart = scene.getObject('heart' + this.health);
             if(heart) {
                 heart.setImage('img/heart-grey.png');
@@ -198,8 +197,6 @@
             this.parent(spawnPoint);
             vec3.set(this.pos, this.goodPos);
             vec3.set(this.rot, this.goodRot);
-
-            resources.get('sounds/die.wav').play();
         },
 
         saveState: function(pos, rot, sequenceId) {

@@ -4,7 +4,8 @@ sh.Sound = sh.Obj.extend({
         this.audio = audio;
     },
 
-    play: function() {
+    play: function(volume) {
+        this.audio.volume = volume || 1;
         this.audio.play();
         this.audio.currentTime = 0;
     }
@@ -62,7 +63,7 @@ sh.WebAudioSound = sh.Sound.extend({
         }
     },
 
-    play: function() {
+    play: function(volume) {
         var ctx = sh.WebAudioSound.context;
 
         if(ctx) {
@@ -71,6 +72,7 @@ sh.WebAudioSound = sh.Sound.extend({
             source.buffer = this.buffer;
             source.connect(gain);
             gain.connect(ctx.destination);
+            gain.gain.value = volume || 1;
 
             source.noteOn(0);
         }

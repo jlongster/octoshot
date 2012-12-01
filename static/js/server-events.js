@@ -67,21 +67,47 @@
                 }
 
                 var node = getTargettedEntity(obj);
+                var player = scene.getCamera().target;
+
                 if(node) {
+                    if(node.hasProximity(player)) {
+                        resources.get('sounds/die.wav').play(
+                            node === player ? 1.0 : .2
+                        );
+                    }
+
                     node.restart(obj.args[2]);
                 }
                 break;
             case 'hit':
                 var node = getTargettedEntity(obj);
+                var player = scene.getCamera().target;
+
                 if(node) {
                     node.hit();
+                }
+
+                if(node !== player && node.hasProximity(player)) {
+                    resources.get('sounds/hit.wav').play(
+                        obj.args[0] === server.userId ? 1.0 : .2
+                    );
+                }
+                else if(node === player) {
+                    resources.get('sounds/hurt.wav').play();
                 }
                 break;
             case 'fullRoom':
                 game.setFull(obj.args[0]);
                 break;
             case 'shoot':
-                resources.get('sounds/laser.wav').play(.2);
+                if(obj.from !== 0) {
+                    var node = getTargettedEntity(obj);
+                    var player = scene.getCamera().target;
+
+                    if(node.hasProximity(player)) {
+                        resources.get('sounds/laser.wav').play(.2);
+                    }
+                }
             }
         });
     }

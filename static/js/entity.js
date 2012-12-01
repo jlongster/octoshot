@@ -96,14 +96,22 @@
 
         hit: function() {
             this.health--;
-
-            if(typeof resources !== 'undefined') {
-                resources.get('sounds/hit.wav').play();
-            }
+            
         },
 
         isDead: function() {
             return this.health <= 0;
+        },
+
+        hasProximity: function(node) {
+            var ab = vec3.create();
+            vec3.subtract(this.pos, node.pos, ab);
+
+            console.log(vec3.length(ab));
+            if(vec3.length(ab) < 300) {
+                return true;
+            }
+            return false;
         },
 
         handleServerInput: function(state) {
@@ -241,8 +249,7 @@
                 this.setRot(0, 0, 0);
                 break;
             }
-
-            resources.get('sounds/die.wav').play(.2);
+            
             this.resetState();
         },
 

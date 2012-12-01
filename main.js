@@ -113,7 +113,7 @@ function handlePacket(user, data) {
 
         room.broadcast(user, p.cmdPacket({
             type: p.cmdPacket.typeId,
-            from: 0,
+            from: user.id,
             method: 'shoot',
             args: null
         }));
@@ -199,13 +199,13 @@ function handleHit(shooter, target) {
         type: p.cmdPacket.typeId,
         from: 0,
         method: 'hit',
-        args: null
+        args: [shooter.id]
     };
 
     target.stream.write(p.cmdPacket(obj));
 
     obj.from = target.id;
-    shooter.stream.write(p.cmdPacket(obj));
+    target.room.broadcast(target, p.cmdPacket(obj));
 }
 
 function handleDeath(killerUser, killedUser) {
