@@ -1,9 +1,9 @@
 
 ![](http://jlongster.com:4000/img/octo-screen.png)
 
-Octoshot is a multiplayer FPS for the web. You must defend your octocat-ness by
-shooting others with lasers. Each person has 3 hit points, so you must
-shoot well 3 times.
+Octoshot is a multiplayer FPS for the web. You are an octocat clone
+and you must defend your octocat-ness by shooting other clones with
+lasers. Each person has 3 hit points, so you must shoot well 3 times.
 
 Octoshot features a 3d WebGL world, and a site for running games of up
 to 8 players. Simply go to [the site](http://octoshot.jlongster.com/)
