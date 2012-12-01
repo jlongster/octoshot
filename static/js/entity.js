@@ -110,8 +110,8 @@
             // Run the entity's movement on the server-side.
             var dt = state.dt;
 
-            this.rotateX(state.mouseY * -.01);
-            this.rotateY(state.mouseX * -.01);
+            this.rotateX(state.mouseY * -.0025);
+            this.rotateY(state.mouseX * -.0025);
 
             if(state.left) {
                 this.moveLeft(this.speed * dt);
