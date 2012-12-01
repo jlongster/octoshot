@@ -1,0 +1,41 @@
+#!/bin/sh
+
+ROOT=`dirname "$0"`
+output="$1"
+
+if [ -z "$SLIM" ]; then
+    # Listed in order of dependency
+    files="object.js lib.js nodes.js runtime.js lexer.js parser.js compiler.js 
+       filters.js web-loaders.js loaders.js environment.js"
+else
+    # Listed in order of dependency
+    files="object.js lib.js filters.js runtime.js environment.js"
+fi
+
+rm -f "$output"
+
+echo "(function() {" >> "$output"
+echo "var modules = {};" >> "$output"
+
+for file in $files; do
+    name=${file%%.*}
+    echo "(function() {" >> "$output"
+    cat "src/$file" | \
+        perl -ne 's/^(.*)require\(\W*([\w-]*)\W*\)(.*)$/$1modules["$2"]$3/; print' | \
+        sed -e "s/module.exports/modules['$name']/" \
+        >> "$output"
+    echo "})();" >> "$output"
+done
+
+cat index.js | \
+    perl -ne 's/require\(\W*\.\/src\/([\w-]*)\W*\)/modules["$1"]/; print' | \
+    sed -e 's/module.exports/window.nunjucks/' \
+    >> "$output"
+
+echo "
+window.nunjucks.require =
+   function(name) { return modules[name]; };
+" >> "$output"
+
+echo "})();" >> "$output"
+

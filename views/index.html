@@ -9,11 +9,23 @@
     <style>
     </style>
   </head>
-  <body>
+  <body class="intro">
     <div id="intro">
       <h1>Octoshot</h1>
       
       <p><em>A 3d first person shooter for the web!</em></p>
+
+      <p>
+        Currently there are <strong>{{ roomCount }}</strong> games and
+        <strong>{{ playerCount }}</strong> players!
+      </p>
+
+      {% if noroom %}
+      <strong>
+         There are no available games with open slots right now,
+         perhaps start one and wait for others?
+      </strong>
+      {% endif %}
 
       <h3>Rules</h3>
 
@@ -37,45 +49,7 @@
       <button class="play-start">Start a Game</button>
     </div>
 
-    <div id="instructions">
-      <h1>Instructions</h1>
-    </div>
-
-    <div id="ingame">
-      <canvas id="canvas"></canvas>
-
-      <div id="notification"></div>
-
-      <div id="chat" class="closed">
-        <div id="messages"></div>
-        <div class="type">
-          <div class="inner">
-            <input id="message-input" type="text" name="message" autocomplete="off" />
-          </div>
-        </div>
-      </div>
-
-      <div class="initialOverlay">
-        <p>Use WASD or arrow keys to move around, and space to jump.</p>
-
-        <p>
-          <strong>In fullscreen mode</strong>, use mouse to look around and click
-          shoot.
-        </p>
-
-        <p>
-          <strong>In windowed mode</strong>, click and drag to look around and hit E to
-          shoot.
-        </p>
-          
-        <p>
-          Want to go fullscreen (recommended for pointer lock)?
-          <button class="start">Yes</button>
-          <button class="no">No</button>
-        </p>
-      </div>
-    </div>
-
+    <script src="js/zepto.min.js"></script>
     <script src="js/landing.js"></script>
   </body>
 </html>

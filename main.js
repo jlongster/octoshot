@@ -1,5 +1,6 @@
 var fs = require('fs');
 var express = require('express');
+var nunjucks = require('nunjucks');
 var remix = require('webremix');
 var settings = require('./settings');
 var BinaryServer = require('binaryjs').BinaryServer;
@@ -10,26 +11,53 @@ var Entity = require('./static/js/entity');
 var level = require('./static/js/level');
 
 var app = express();
+var env = new nunjucks.Environment(new nunjucks.FileSystemLoader('views'));
+env.express(app);
 var server = require('http').createServer(app);
 
 app.configure(function() {
     app.use(express.static(__dirname + '/static'));
 });
 
+app.get('/', function(req, res) {
+    res.render('index.html', {
+        roomCount: roomCount(),
+        playerCount: playerCount(),
+        noroom: 'noroom' in req.query
+    });
+});
+
+app.get('/find', function(req, res) {
+    var rooms = [];
+
+    for(var k in ROOMS) {
+        if(ROOMS.hasOwnProperty(k) && ROOMS[k]) {
+            rooms.push(ROOMS[k]);
+        }
+    }
+
+    rooms.sort(function(room1, room2) {
+        return room1.count() < room2.count();
+    });
+
+    for(var i=0; i<rooms.length; i++) {
+        if(rooms[i].count() < MAX_PER_ROOM) {
+            res.redirect('/' + rooms[i].name);
+        }
+    }
+
+    res.redirect('/?noroom');
+});
+
 app.get('/:id', function(req, res) {
     var id = req.params.id;
-
-    fs.readFile(__dirname + '/static/game.html', function(err, data) {
-        res.writeHead(200, { 'Content-Type': 'text/html',
-                             'Content-Length': data.length });
-        res.write(data);
-        res.end();
-    });
+    res.render('game.html', { room: id });
 });
 
 // Sockets
 
 var ROOMS = {};
+var MAX_PER_ROOM = 8;
 
 function handlePacket(user, data) {
     var packet, desc;
@@ -309,6 +337,10 @@ function removeUser(user) {
     var room = user.room;
     room.removePlayer(user);
 
+    if(room.count() <= 0) {
+        destroyRoom(room);
+    }
+
     console.log(user.name + ' disconnected [' + room.count() + ']');
 
     // Broadcast to everyone that he/she left
@@ -334,7 +366,32 @@ function createRoom(name) {
     var room = new Room(name, scene);
     level.createLevel(scene);
     room.start();
+
+    console.log('room "' + name + '" created [' + roomCount() + ']');
+
     return room;
+}
+
+function destroyRoom(room) {
+    room.stop();
+    ROOMS[room.name] = null;
+
+    console.log('room "' + room.name + '" destroyed! [' + roomCount() + ']');
+}
+
+function roomCount() {
+    var names = Object.getOwnPropertyNames(ROOMS);
+    return names.filter(function(v) { return ROOMS[v]; }).length;
+}
+
+function playerCount() {
+    var count = 0;
+    for(var k in ROOMS) {
+        if(ROOMS[k]) {
+            count += ROOMS[k].count();
+        }
+    }
+    return count;
 }
 
 // Create the actual connection
