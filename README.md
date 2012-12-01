@@ -4,7 +4,7 @@ shooting others with lasers. Each person has 3 hit points, so you must
 shoot well 3 times.
 
 Octoshot features a 3d WebGL world, and a site for running games of up
-to 8 players. Simply go to [the site](http://jlongster.com:4000) and
+to 8 players. Simply go to [the site](http://octoshot.jlongster.com/) and
 click "start a game" to start a new game, or click "find a game" and
 it will try to find an existing game and put you in it.
 
