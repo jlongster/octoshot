@@ -26,6 +26,8 @@ Only tested in Firefox Nightly and Chrome (latest). The lastest release version 
 * Firefox Nightly (http://nightly.mozilla.org/)
 * Google Chrome
 
+Known bugs: you can go through walls.
+
 #### Running
 
 This is writting in node. If you want to run it locally, and you have a

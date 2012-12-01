@@ -89,7 +89,7 @@ function init() {
     sky.setMaterial(['sky.vsh', 'sky.fsh']);
     scene.addObject(sky);
 
-    //var fork = new sh.Square([200, 100, 200], null, [20, 20, 20]);
+    //var fork = new sh.Square([-10, 0, -10], null, [1, 200, 200]);
     // fork.setImage('img/fork.png');
     // forka.setMaterial(['ui.vsh', 'ui.fsh']);
     // fork.color = [0, 1, 0];
