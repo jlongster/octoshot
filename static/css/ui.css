@@ -9,12 +9,11 @@
     border: 1px solid grey;
     font-size: 14px;
     color: white;
-
-    transition: right .5s;
+    display: block;
 }
 
 #chat.closed {
-    right: -50%;
+    display: none;
 }
 
 #messages {
@@ -27,7 +26,8 @@
     font-style: italic;
 }
 
-#messages .server {
+#messages .server,
+#messages .server-intro {
     color: #afd3d4;
 }
 
@@ -102,14 +102,24 @@
     -moz-transition: opacity 1s;
 }
 
+button.fullscreen {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    font-size: 1em;
+    margin: .5em;
+}
+
 #timer {
     position: absolute;
     top: 0;
     left: 0;
-    padding: 1em;
+    margin: .5em;
+    padding: .5em 1em;
+    border: 1px solid black;
 
     display: none;
-    font-size: 1.5em;
+    font-size: 1.25em;
     background-color: white;
 }
 

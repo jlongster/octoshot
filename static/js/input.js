@@ -19,6 +19,11 @@
     var modifier = false;
 
     function onKeyDown(e) {
+        // For some weird reason pressing ESC kills the websocket
+        if(e.keyCode == 27) {
+            e.preventDefault();
+        }
+
         if(e.altKey || e.shiftKey || e.ctrlKey || e.metaKey) {
             modifier = true;
         }

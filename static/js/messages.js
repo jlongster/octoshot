@@ -13,15 +13,6 @@
         cmd = parts[0];
         var args = parts.slice(1).join(' ');
 
-        // if(cmd == 'god') {
-        //     player.toggleGod();
-        //     printMessage('God mode is ' + (player.isGod ? 'on' : 'off'),
-        //                  '',
-        //                  function(msg, name) {
-        //                      return '<div>' + msg + '</div>';
-        //                  });
-        // }
-
         server.command(cmd, args);
         return true;
     }
@@ -30,7 +21,7 @@
         var n = $('#notification');
         var all = n.children('.message');
 
-        if(all.length > 2) {
+        if(all.length > 1) {
             all.first().remove();
         }
 
@@ -66,7 +57,7 @@
             .replace(/</g, '&lt;')
             .replace(/>/g, '&gt;');
 
-        if(name == 'server') {
+        if(name == 'server' || name == 'server-intro') {
             msg = msg.replace(/&/g, '&amp;')
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;')
@@ -81,7 +72,7 @@
         messages.append(formatted);
         messages[0].scrollTop = 100000;
 
-        if(closed && name != 'server') {
+        if(closed && name != 'server-intro') {
             notify(formatted);
         }
     }
@@ -97,6 +88,7 @@
                 chat.find('.type input').blur();
             }
             else {
+                $('#messages').height(renderer.height - $('#chat .type').height());
                 chat.find('.type input').focus();
             }
 
@@ -108,6 +100,12 @@
             if(e.keyCode != 112) {
                 e.stopPropagation();
             }
+
+            // For some weird reason pressing ESC kills the websocket
+            if(e.keyCode == 27) {
+                e.preventDefault();
+            }
+
 
             if(e.keyCode == 13) {
                 var val = el.val();
@@ -137,8 +135,6 @@
                 });
             }
         });
-
-        $('#messages').height(renderer.height - $('#chat .type').height());
     }
 
     window.messages = {

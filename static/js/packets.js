@@ -49,7 +49,7 @@
     ]);
 
     var joinRoomPacket = jsPacketType(basePacket, ['room']);
-    var newUserPacket = jsPacketType(basePacket, ['id', 'name']);
+    var newUserPacket = jsPacketType(basePacket, ['id', 'name', 'playerCount']);
     var gameStartPacket = jsPacketType(basePacket, ['started']);
     var gameOverPacket = jsPacketType(basePacket, ['scores', 'nextGameId']);
     var leavePacket = jsPacketType(basePacket, ['id', 'name']);

@@ -41,6 +41,25 @@ function convertToWireframe(indices) {
     return arr;
 }
 
+function showInitialOverlay() {
+    if(document.cookie.indexOf('seenOverlay') === -1) {
+        document.cookie = 'seenOverlay=1;expires=0';
+        $('#ingame .initialOverlay').show();
+    }
+    else {
+        actuallyStart();
+    }
+}
+
+function actuallyStart() {
+    var el = $('#ingame')[0];
+    $('.initialOverlay', el).hide();
+
+    input.activate();
+    messages.notify('Press F1 to toggle the chat window. ' +
+                    'You can change your name there.');
+}
+
 function init() {
     renderer = new sh.Renderer(w, h);
     scene = new sh.Scene(255 * 4, 255 * 4);
@@ -70,21 +89,25 @@ function init() {
     sky.setMaterial(['sky.vsh', 'sky.fsh']);
     scene.addObject(sky);
 
+    //var fork = new sh.Square([200, 100, 200], null, [20, 20, 20]);
+    // fork.setImage('img/fork.png');
+    // forka.setMaterial(['ui.vsh', 'ui.fsh']);
+    // fork.color = [0, 1, 0];
+    // fork.backface = true;
+    // scene.addObject(fork);
+
     var terrain = new Terrain(null, null, null,
                               scene.sceneWidth,
                               scene.sceneDepth);
     terrain.create();
     scene.addObject(terrain);
 
-    //document.getElementById('loading').style.display = 'none';
-
     serverEvents.init();
     messages.init();
     window.onresize = resize;
 
     if(!game.isFull()) {
-        console.log('shogin');
-        $('#ingame .initialOverlay').show();
+        showInitialOverlay();
         heartbeat();
     }
 }
@@ -127,6 +150,8 @@ function resize() {
 
     renderer.resize(w, h);
     renderer.perspective(45, w / h, 1.0, 5000.0);
+
+    $('#messages').height(renderer.height - $('#chat .type').height());
 }
 
 function load() {
@@ -154,6 +179,10 @@ function load() {
         'shaders/textured.vsh',
         'img/octo.png',
         'img/crosshair.png',
+        'img/heart.png',
+        'img/heart-grey.png',
+        'img/stone.png',
+        'img/fork.png',
         'img/grass.jpg',
         'sounds/laser.wav',
         'sounds/hurt.wav',
@@ -166,7 +195,18 @@ function load() {
 function initPage() {
     $('#ingame button.start').click(function() {
         actuallyStart();
+        goFullscreen();
+    });
 
+    $('#ingame button.no').click(function() {
+        actuallyStart();
+    });
+
+    $('#ingame button.fullscreen').click(function() {
+        goFullscreen();
+    });
+
+    function goFullscreen() {
         var el = $('#ingame')[0];
         el.requestFullscreen = el.requestFullscreen ||
             el.mozRequestFullscreen ||
@@ -174,17 +214,6 @@ function initPage() {
             el.webkitRequestFullscreen;
 
         el.requestFullscreen();
-    });
-
-    $('#ingame button.no').click(function() {
-        actuallyStart();
-    });
-
-    function actuallyStart() {
-        var el = $('#ingame')[0];
-        $('.initialOverlay', el).hide();
-        input.activate();
-        messages.notify("Press F1 to open and close the chat window");
     }
 
     function onFullscreenChange() {
@@ -198,9 +227,11 @@ function initPage() {
                 el.webkitRequestPointerLock;
             el.requestPointerLock();
             renderer.fullscreen = true;
+            $('button.fullscreen').hide();
         }
         else {
             renderer.fullscreen = false;
+            $('button.fullscreen').show();
         }
 
         resize();

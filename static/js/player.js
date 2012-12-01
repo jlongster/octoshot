@@ -40,13 +40,20 @@
             // player according to input, but also record the input and send
             // it to the server.
 
-            this.resetState();
+            this.resetInputState();
             var state = this.state;
 
             if(mouse[0] !== 0 || mouse[1] !== 0) {
                 moved = true;
                 this.rotateX(mouse[1] * -.01);
                 this.rotateY(mouse[0] * -.01);
+            }
+
+            if(this.rot[0] < -Math.PI / 2.0) {
+                this.rot[0] = -Math.PI / 2.0;
+            }
+            else if(this.rot[0] > Math.PI / 2.0) {
+                this.rot[0] = Math.PI / 2.0;
             }
 
             state.mouseX = mouse[0];
@@ -169,6 +176,22 @@
         hit: function() {
             this.health--;
             resources.get('sounds/hurt.wav').play();
+
+            var heart = scene.getObject('heart' + this.health);
+            if(heart) {
+                heart.setImage('img/heart-grey.png');
+            }
+        },
+
+        resetState: function() {
+            this.parent();
+
+            for(var i=0; i<3; i++) {
+                var heart = scene.getObject('heart' + i);
+                if(heart) {
+                    heart.setImage('img/heart.png');
+                }
+            }
         },
 
         restart: function(spawnPoint) {
@@ -189,8 +212,7 @@
             });
         },
 
-        resetState: function() {
-            this.parent();
+        resetInputState: function() {
             this.state = {
                 dt: 0.0,
                 left: 0,

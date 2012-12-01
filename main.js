@@ -159,7 +159,7 @@ function handlePacket(user, data) {
             }));
             break;
         case 'me':
-            if(args.length) {
+            if(args && args.length) {
                 packet = p.cmdResPacket({
                     type: p.cmdResPacket.typeId,
                     from: 0,
@@ -278,27 +278,28 @@ function createUser(stream, room) {
         type: p.newUserPacket.typeId,
         from: 0,
         id: user.id,
-        name: user.name
+        name: user.name,
+        playerCount: room.count()
     }));
 
     stream.write(p.messagePacket({
         type: p.messagePacket.typeId,
         from: 0,
-        name: 'server',
+        name: 'server-intro',
         message: 'Welcome ' + user.name + '!'
     }));
 
     stream.write(p.messagePacket({
         type: p.messagePacket.typeId,
         from: 0,
-        name: 'server',
+        name: 'server-intro',
         message: 'Currently ' + room.count() + ' players are connected.'
     }));
 
     stream.write(p.messagePacket({
         type: p.messagePacket.typeId,
         from: 0,
-        name: 'server',
+        name: 'server-intro',
         message: 'Available commands:\n    /nick <name> Change your nick\n    /names           View connected users\n    /me                 Perform an action'
     }));
 

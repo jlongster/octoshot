@@ -28,6 +28,12 @@
             }
         });
 
+        server.on('newUser', function(obj) {
+            if(obj.playerCount <= 1) {
+                messages.notify('Waiting for other players...');
+            }
+        });
+
         server.on('gameStart', function(obj) {
             game.start(obj.started);
         });

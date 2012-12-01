@@ -5,7 +5,7 @@
         init: function(opts) {
             opts = opts || {};
             this.parent(opts.pos, opts.rot, opts.scale, { centered: true });
-            this.speed = opts.speed || 100;
+            this.speed = opts.speed || 65;
             this.sequenceId = 0;
 
             // The server does the collision for us (whee)
@@ -19,7 +19,7 @@
             }
 
             if(!opts.scale) {
-                this.setScale(10, 10, 10);
+                this.setScale(5, 5, 5);
             }
 
             this.resetState();
@@ -91,7 +91,7 @@
         },
 
         getLowestHeight: function() {
-            return Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
+            return Terrain.getHeight(this.pos[0], this.pos[2], true) + 10.0;
         },
 
         hit: function() {

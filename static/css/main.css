@@ -43,8 +43,8 @@ canvas {
 
 #intro {
     overflow: hidden;
-    background-color: white;
-    color: black;
+    background-color: black;
+    color: white;
     height: 100%;
     width: 100%;
     text-align: center;
@@ -52,7 +52,34 @@ canvas {
 
 #intro h1 {
     font-size: 3em;
-    color: black;
+}
+
+#intro .header {
+    padding: 3em 0;
+    width: 600px;
+    margin: 0 auto;
+    overflow: hidden;
+}
+
+#intro .tagline {
+    font-size: 1.25em;
+    width: 300px;
+}
+
+#intro a, a:visited {
+    color: green;
+}
+
+#intro .header img {
+    float: left;
+}
+
+#intro .header .text {
+    float: right;
+}
+
+.clear {
+    clear: both;
 }
 
 button {
@@ -104,7 +131,13 @@ body.ingame #ingame {
 }
 
 #ingame .initialOverlay p {
-    margin-top: 2em;
+    margin-top: 3em;
+}
+
+#ingame .initialOverlay ul {
+    width: 30em;
+    margin: 0 auto;
+    text-align: left;
 }
 
 #ingame .initialOverlay button {
