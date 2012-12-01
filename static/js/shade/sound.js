@@ -34,17 +34,20 @@ sh.AudioDataSound = sh.Sound.extend({
     },
 
     play: function() {
-        var audio = new Audio();
-        audio.mozSetup(this.channels, this.sampleRate);
-        audio.autoplay = true;
-        audio.muted = false;
-        audio.volume = 1;
-        this.audio = audio;
+        try {
+            var audio = new Audio();
+            audio.mozSetup(this.channels, this.sampleRate);
+            audio.autoplay = true;
+            audio.muted = false;
+            audio.volume = 1;
+            this.audio = audio;
 
-        var bufs = this.buffers;
-        for(var i=0, l=bufs.length; i<l; i++) {
-            audio.mozWriteAudio(bufs[i]);
+            var bufs = this.buffers;
+            for(var i=0, l=bufs.length; i<l; i++) {
+                audio.mozWriteAudio(bufs[i]);
+            }
         }
+        catch(e) {}
     }
 });
 
