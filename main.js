@@ -22,6 +22,14 @@ app.configure(function() {
 app.get('/', function(req, res) {
     res.render('index.html', {
         roomCount: roomCount(),
+        currentRooms: Object.getOwnPropertyNames(ROOMS)
+            .filter(function(name) {
+                // Filter out nulls
+                return ROOMS[name];
+            }).map(function(name) {
+                var r = ROOMS[name];
+                return [r.name, r.count()];
+            }),
         playerCount: playerCount(),
         noroom: 'noroom' in req.query
     });
@@ -40,13 +48,17 @@ app.get('/find', function(req, res) {
         return room1.count() < room2.count();
     });
 
+    var found = false;
     for(var i=0; i<rooms.length; i++) {
         if(rooms[i].count() < MAX_PER_ROOM) {
             res.redirect('/' + rooms[i].name);
+            found = true;
         }
     }
 
-    res.redirect('/?noroom');
+    if(!found) {
+        res.redirect('/?noroom');
+    }
 });
 
 app.get('/:id', function(req, res) {
