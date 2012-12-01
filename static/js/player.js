@@ -45,8 +45,8 @@
 
             if(mouse[0] !== 0 || mouse[1] !== 0) {
                 moved = true;
-                this.rotateX(mouse[1] * -.0025);
-                this.rotateY(mouse[0] * -.0025);
+                this.rotateX(mouse[1] * -.005);
+                this.rotateY(mouse[0] * -.005);
             }
 
             if(this.rot[0] < -Math.PI / 2.0) {
