@@ -47,8 +47,8 @@
 
             if(mouse[0] !== 0 || mouse[1] !== 0) {
                 moved = true;
-                this.rotateX(mouse[1] * -Math.PI / 12.0 * dt);
-                this.rotateY(mouse[0] * -Math.PI / 12.0 * dt);
+                this.rotateX(mouse[1] * -.01);
+                this.rotateY(mouse[0] * -.01);
             }
 
             state.mouseX = mouse[0];
@@ -168,6 +168,11 @@
             }
         },
 
+        hit: function() {
+            this.health--;
+            resources.get('sounds/hurt.wav').play();
+        },
+
         restart: function(spawnPoint) {
             this.parent(spawnPoint);
             vec3.set(this.pos, this.goodPos);
@@ -187,6 +192,7 @@
         },
 
         resetState: function() {
+            this.parent();
             this.state = {
                 dt: 0.0,
                 left: 0,

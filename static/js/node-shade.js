@@ -524,6 +524,8 @@ sh.Collision = {
                 return [0, 0, f3];
             }
         }
+
+        return [0, 0, 0];
     },
 
     STATIC: 1,

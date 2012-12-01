@@ -71,7 +71,14 @@ function handlePacket(user, data) {
                                 [packet.x2, packet.y2, packet.z2]);
         if(ents.length) {
             for(var i=0; i<ents.length; i++) {
-                handleDeath(user, lookupUser(ents[i]));
+                ents[i].hit();
+
+                if(ents[i].isDead()) {
+                    handleDeath(user, lookupUser(ents[i]));
+                }
+                else {
+                    handleHit(user, lookupUser(ents[i]));
+                }
             }
         }
         break;
@@ -149,6 +156,20 @@ function handlePacket(user, data) {
     default:
         console.log('unknown packet type: ' + packet.type);
     }
+}
+
+function handleHit(shooter, target) {
+    var obj = {
+        type: p.cmdPacket.typeId,
+        from: 0,
+        method: 'hit',
+        args: null
+    };
+
+    target.stream.write(p.cmdPacket(obj));
+
+    obj.from = target.id;
+    shooter.stream.write(p.cmdPacket(obj));
 }
 
 function handleDeath(killerUser, killedUser) {

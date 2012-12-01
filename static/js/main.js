@@ -149,7 +149,7 @@ function initPage() {
         var el = $('#ingame')[0];
         $('.initialOverlay', el).hide();
         input.activate();
-        messages.notify("Press T to bring up chat, ESC to close it");
+        messages.notify("Press F1 to open and close the chat window");
     }
 
     function onFullscreenChange() {
@@ -239,7 +239,9 @@ function showInGame() {
         'img/octo.png',
         'img/crosshair.png',
         'img/grass.jpg',
-        'sounds/laser.wav'
+        'sounds/laser.wav',
+        'sounds/hurt.wav',
+        'sounds/hit.wav'
     ]);
 
     resources.onReady(init);

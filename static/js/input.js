@@ -43,6 +43,7 @@
         down = true;
         lastMouse = [e.pageX, e.pageY];
         curMouse = [e.pageX, e.pageY];
+        e.preventDefault();
     }
 
     function onMouseMove(e) {
@@ -69,11 +70,13 @@
         }
 
         accessed = false;
+        e.preventDefault();
     }
 
     function onMouseUp(e) {
         down = false;
         clicked = true;
+        e.preventDefault();
     }
 
     function reset() {

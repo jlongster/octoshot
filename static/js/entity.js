@@ -6,6 +6,7 @@
             opts = opts || {};
             this.parent(opts.pos, opts.rot, opts.scale, { centered: true });
             this.speed = opts.speed || 100;
+            this.sequenceId = 0;
 
             // The server does the collision for us (whee)
             this.collisionType = Collision.NONE;
@@ -13,27 +14,15 @@
             // A hack to optimize entity collection in the scene graph
             this.isEntity = true;
 
-            this.sequenceId = 0;
-            this.goodPos = vec3.create();
-            this.goodRot = vec3.create();
-            this.restart(0);
-
-            // Since by default you are respawned, make sure to re-set
-            // the pos and rot
-            if(opts.pos) {
-                var p = opts.pos;
-                this.setPos(p[0], p[1], p[2]);
+            if(!opts.rot){
+                this.rotateY(Math.PI);
             }
 
-            if(opts.rot) {
-                var r = opts.rot;
-                this.setRot(r[0], r[1], r[2]);
-            }
-            
             if(!opts.scale) {
                 this.setScale(10, 10, 10);
             }
 
+            this.resetState();
             this.color = opts.color || vec3.createFrom(0, 0, 1);
 
             // Add some tentacles
@@ -105,12 +94,24 @@
             return Terrain.getHeight(this.pos[0], this.pos[2], true) + 20.0;
         },
 
+        hit: function() {
+            this.health--;
+
+            if(typeof resources !== 'undefined') {
+                resources.get('sounds/hit.wav').play();
+            }
+        },
+
+        isDead: function() {
+            return this.health <= 0;
+        },
+
         handleServerInput: function(state) {
             // Run the entity's movement on the server-side.
             var dt = state.dt;
 
-            this.rotateX(state.mouseY * -Math.PI / 12.0 * dt);
-            this.rotateY(state.mouseX * -Math.PI / 12.0 * dt);
+            this.rotateX(state.mouseY * -.01);
+            this.rotateY(state.mouseX * -.01);
 
             if(state.left) {
                 this.moveLeft(this.speed * dt);
@@ -241,12 +242,19 @@
                 break;
             }
 
+            this.resetState();
+        },
+
+        resetState: function() {
+            this.health = 3;
             this.interp = 1.0;
             this.packetBuffer = [];
             this.startPos = this.targetPos = null;
             this.startRot = this.targetRot = null;
+            this.goodPos = vec3.create(this.pos);
+            this.goodRot = vec3.create(this.rot);
         },
-
+        
         update: function(dt) {
             if(this.interp < 1.0) {
                 this.interp += dt / this.serverFreq;
