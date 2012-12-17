@@ -113,7 +113,7 @@ BinaryPack.Unpacker.prototype.readUInt64 = function(){
 }
 
 BinaryPack.Unpacker.prototype.readInt64 = function(){
-  var uint64 = this.readInt64();
+  var uint64 = this.readUInt64();
   return (uint64 < Math.pow(2, 63) ) ? uint64 : uint64 - Math.pow(2, 64);
 }
 

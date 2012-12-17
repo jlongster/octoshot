@@ -7,6 +7,14 @@
         var thickness = 1000;
         var opts = { wireframe: false };
 
+        // var floor = new Cube([0, -50, 0],
+        //                      null,
+        //                      [w, 50, d],
+        //                     opts);
+        // floor.color = [.2, .2, .2];
+        // floor.collisionType = Collision.STATIC;
+        // scene.addObject(floor);
+
         var front = new Cube([-thickness, 0, -thickness],
                              null,
                              [w + thickness * 2, height, thickness],

@@ -155,3 +155,14 @@ body.ingame #ingame {
     background: linear-gradient(to bottom,  #0088cc 0%,#0055cc 100%); /* W3C */
     filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#0088cc', endColorstr='#0055cc',GradientType=0 ); /* IE6-9 */
 }
+
+.social {
+    padding: .5em 0;
+    position: absolute;
+    top: 0;
+    right: 0;
+}
+
+.social .item {
+    margin-bottom: .5em;
+}

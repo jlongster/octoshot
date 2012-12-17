@@ -91,7 +91,8 @@
         },
 
         getLowestHeight: function() {
-            return Terrain.getHeight(this.pos[0], this.pos[2], true) + 10.0;
+            //return Terrain.getHeight(this.pos[0], this.pos[2], true) + 10.0;
+            return 20.0;
         },
 
         hit: function() {

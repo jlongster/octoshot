@@ -10,6 +10,9 @@ var Room = require('./room');
 var Entity = require('./static/js/entity');
 var level = require('./static/js/level');
 
+// For adding bots
+var spawn = require('child_process').spawn
+
 var app = express();
 var env = new nunjucks.Environment(new nunjucks.FileSystemLoader('views'));
 env.express(app);
@@ -360,10 +363,11 @@ function createUser(stream, room) {
     if(room.count() > 1) {
         if(!room.startTime()) {
             room.start();
+
             room.broadcast(null, p.gameStartPacket({
                 type: p.gameStartPacket.typeId,
                 from: 0,
-                started: room.startTime()
+                started: Date.now()
             }));
 
             room.onEnd(function() {
@@ -426,6 +430,12 @@ function createRoom(name) {
     room.startSyncing();
 
     console.log('room "' + name + '" created [' + roomCount() + ']');
+
+    // Spawn a bot
+    // var p = spawn('node', ['./ai', name]);
+    // p.stderr.on('data', function(data) {
+    //     console.log('[ERROR] ' + data);
+    // });
 
     return room;
 }
